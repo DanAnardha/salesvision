@@ -59,6 +59,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -70,6 +71,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.ViewCompat.FocusDirection
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraph
 import androidx.navigation.NavHost
@@ -86,9 +88,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SalesVisionTheme {
-                Surface(
-                    //modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+//                        .paint(
+//                            painterResource(id = R.drawable.jclogin),
+//                            contentScale = ContentScale.FillBounds
+//                        )
                 ) {
                     val navController = rememberNavController()
                     NavGraph(navController)
@@ -137,14 +143,14 @@ fun MainScreen(navController: NavHostController) {
                             popUpTo(0)
                         }
                     })
-                NavigationDrawerItem(label = { Text(text = "Profile", color = BlueJC)},
+                NavigationDrawerItem(label = { Text(text = "Sales", color = BlueJC)},
                     selected = false,
                     icon = { Icon(imageVector = Icons.Default.Person, contentDescription = "dashboard", tint = BlueJC)},
                     onClick = {
                         coroutineScope.launch {
                             drawerState.close()
                         }
-                        navigationController.navigate(Screens.Profile.screen){
+                        navigationController.navigate(Screens.Sales.screen){
                             popUpTo(0)
                         }
                     })
@@ -200,7 +206,7 @@ fun MainScreen(navController: NavHostController) {
             NavHost(navController = navigationController,
                 startDestination = Screens.Dashboard.screen){
                 composable(Screens.Dashboard.screen) { Dashboard()}
-                composable(Screens.Profile.screen) { Profile()}
+                composable(Screens.Sales.screen) { Sales() }
                 composable(Screens.Settings.screen) { Settings()}
             }
         }
@@ -217,8 +223,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
     Column(modifier = Modifier
         .fillMaxSize()
         .windowInsetsPadding(WindowInsets.ime)
-        .padding(horizontal = 26.dp, vertical = 140.dp),
-        verticalArrangement = Arrangement.Bottom,
+        .padding(horizontal = 50.dp, vertical = 140.dp),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally)
     {
         val focusManager = LocalFocusManager.current
@@ -284,8 +290,8 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 }
 
 private fun authenticate(username: String, password: String): Boolean {
-    val validUsername = "admin"
-    val validPassword = "admin"
+    val validUsername = ""
+    val validPassword = ""
     return username == validUsername && password == validPassword
 }
 
