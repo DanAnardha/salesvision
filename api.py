@@ -58,5 +58,49 @@ def get_sales_by_category():
             cursor.close()
             connection.close()
 
+@app.route('/api/sales_by_segment', methods=['GET'])
+def get_sales_by_segment():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        # Query to calculate sales by segment
+        cursor.execute("""
+            SELECT Segment, SUM(Sales) AS Total_Sales,
+            SUM(Quantity) AS Total_Quantity
+            FROM orders 
+            GROUP BY Segment 
+            ORDER BY Total_Sales DESC
+        """)
+        sales_by_segment = cursor.fetchall()
+        return jsonify(sales_by_segment)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/sales_by_subcategory', methods=['GET'])
+def get_sales_by_subcategory():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        # Query to calculate sales by segment
+        cursor.execute("""
+            SELECT SubCategory, 
+            SUM(Sales) AS Total_Sales 
+            FROM orders 
+            GROUP BY SubCategory 
+            ORDER BY Total_Sales DESC LIMIT 10
+        """)
+        sales_by_segment = cursor.fetchall()
+        return jsonify(sales_by_segment)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
 if __name__ == '__main__':
     app.run(debug=True)

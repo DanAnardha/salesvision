@@ -204,7 +204,7 @@ fun MainScreen(navController: NavHostController) {
             }
         ) {
             NavHost(navController = navigationController,
-                startDestination = Screens.Dashboard.screen){
+                startDestination = Screens.Sales.screen){
                 composable(Screens.Dashboard.screen) { Dashboard()}
                 composable(Screens.Sales.screen) { Sales() }
                 composable(Screens.Settings.screen) { Settings()}
@@ -297,7 +297,7 @@ private fun authenticate(username: String, password: String): Boolean {
 
 @Composable
 fun NavGraph(navController: NavHostController) {
-    NavHost(navController = navController, startDestination = "login") {
+    NavHost(navController = navController, startDestination = "main") {
         composable("login") {
             LoginScreen(onLoginSuccess = {
                 navController.navigate("main") {
