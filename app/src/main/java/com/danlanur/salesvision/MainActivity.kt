@@ -154,7 +154,7 @@ fun MainScreen(navController: NavHostController) {
                             popUpTo(0)
                         }
                     })
-                NavigationDrawerItem(label = { Text(text = "Settings", color = BlueJC)},
+                NavigationDrawerItem(label = { Text(text = "Recommendation", color = BlueJC)},
                     selected = false,
                     icon = { Icon(imageVector = Icons.Default.Settings, contentDescription = "dashboard", tint = BlueJC)},
                     onClick = {
@@ -207,7 +207,7 @@ fun MainScreen(navController: NavHostController) {
                 startDestination = Screens.Sales.screen){
                 composable(Screens.Dashboard.screen) { Dashboard()}
                 composable(Screens.Sales.screen) { Sales() }
-                composable(Screens.Settings.screen) { Settings()}
+                composable(Screens.Settings.screen) { Recommendation() }
             }
         }
 
