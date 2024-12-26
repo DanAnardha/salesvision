@@ -25,6 +25,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -45,8 +47,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.danlanur.salesvision.ui.theme.BlueJC
 import com.danlanur.salesvision.ui.theme.QuickSand
@@ -65,194 +65,159 @@ import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
 import com.github.mikephil.charting.formatter.ValueFormatter
 import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
 import java.text.DecimalFormat
-
-
-interface ApiService {
-    @GET("api/sales_by_region")
-    suspend fun getSalesByRegion(): List<SalesDataRegion>
-
-    @GET("api/sales_by_category")
-    suspend fun getSalesByCategory(): List<SalesDataCategory>
-
-    @GET("api/sales_by_segment")
-    suspend fun getSalesBySegment(): List<SalesDataSegment>
-
-    @GET("api/sales_by_subcategory")
-    suspend fun getSalesBySubCategory(): List<SalesDataSubCategory>
-}
-
-object RetrofitInstance {
-    private const val BASE_URL = "https://36c9-103-178-12-228.ngrok-free.app/"
-//    private const val BASE_URL = "https://10.0.2.2:5000/"
-    val api: ApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(ApiService::class.java)
-    }
-}
-
-class SalesViewModel : ViewModel() {
-    private val _salesDataByRegion = MutableStateFlow<List<SalesDataRegion>>(emptyList())
-    val salesDataByRegion = _salesDataByRegion.asStateFlow()
-    private val _salesDataByCategory = MutableStateFlow<List<SalesDataCategory>>(emptyList())
-    val salesDataByCategory = _salesDataByCategory.asStateFlow()
-    private val _salesDataBySegment = MutableStateFlow<List<SalesDataSegment>>(emptyList())
-    val salesDataBySegment = _salesDataBySegment.asStateFlow()
-    private val _salesDataBySubCategory = MutableStateFlow<List<SalesDataSubCategory>>(emptyList())
-    val salesDataBySubCategory = _salesDataBySubCategory.asStateFlow()
-
-    private val _isLoading = MutableStateFlow(true)
-    val isLoading = _isLoading.asStateFlow()
-    init {
-        loadSalesData()
-    }
-
-    private fun loadSalesData() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            try {
-                val responseRegion = RetrofitInstance.api.getSalesByRegion()
-                _salesDataByRegion.value = responseRegion
-                Log.d("SalesViewModel", "Sales Data Region: $responseRegion")
-
-                val responseCategory = RetrofitInstance.api.getSalesByCategory()
-                _salesDataByCategory.value = responseCategory
-                Log.d("SalesViewModel", "Sales Data by Category: $responseCategory")
-
-                val responseSegment = RetrofitInstance.api.getSalesBySegment()
-                _salesDataBySegment.value = responseSegment
-                Log.d("SalesViewModel", "Sales Data by Segment: $responseSegment")
-
-                val responseSubCategory = RetrofitInstance.api.getSalesBySubCategory()
-                _salesDataBySubCategory.value = responseSubCategory
-                Log.d("SalesViewModel", "Sales Data by Sub-Category: $responseSubCategory")
-
-            } catch (e: Exception) {
-                Log.e("SalesViewModel", "Error loading sales data", e)
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-}
 
 @SuppressLint("RememberReturnType")
 @Composable
-fun ChartWithButtons(salesDataRegion: List<SalesDataRegion>, salesDataCategory: List<SalesDataCategory>, salesDataSegment: List<SalesDataSegment>, totalSales: Int, totalProfit: Int, totalQuantity: Int) {
+fun ChartWithButtons(
+    salesDataRegion: List<SalesDataRegion>,
+    salesDataCategory: List<SalesDataCategory>,
+    salesDataSegment: List<SalesDataSegment>,
+    totalSales: Int,
+    totalProfit: Int,
+    totalQuantity: Int
+) {
     var selectedChart by remember { mutableStateOf("Region") }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 16.dp)
+        // Card container for the chart and buttons
+        Card(
+            modifier = Modifier.fillMaxSize(),
+            shape = RoundedCornerShape(16.dp), // Rounded corners for the card
+            colors = CardDefaults.cardColors(
+                containerColor = Color.White,
+            ),
+
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 8.dp
+            )
         ) {
-            Surface(
-                modifier = Modifier.wrapContentWidth(),
-                shape = RoundedCornerShape(20.dp), // Rounded untuk seluruh container
-                color = Color(0xFFEEEEEE), // Warna abu-abu terang untuk container
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Row(
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp), // Padding dalam container
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp)
                 ) {
-                    IconButton(
-                        onClick = { selectedChart = "Region" },
-                        modifier = Modifier
-                            .background(
-                                if (selectedChart == "Region") Color(0xFFBDBDBD) else Color.Transparent,
-                                shape = RoundedCornerShape(12.dp) // Rounded untuk tombol
-                            )
-                            .padding(6.dp) // Padding dalam tombol agar lebih rapi
+                    Surface(
+                        modifier = Modifier.wrapContentWidth(),
+                        shape = RoundedCornerShape(20.dp), // Rounded for the container
+                        color = Color(0xFFEEEEEE), // Light gray for the container
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Place, // Ikon untuk "Sales by Region"
-                            contentDescription = "Sales by Region",
-                            tint = if (selectedChart == "Region") Color.Black else Color.Gray
-                        )
-                    }
+                        Row(
+                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            IconButton(
+                                onClick = { selectedChart = "Region" },
+                                modifier = Modifier
+                                    .background(
+                                        if (selectedChart == "Region") Color(0xFFBDBDBD) else Color.Transparent,
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .padding(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Place,
+                                    contentDescription = "Sales by Region",
+                                    tint = if (selectedChart == "Region") Color.Black else Color.Gray
+                                )
+                            }
 
-                    Spacer(modifier = Modifier.width(6.dp))
-                    IconButton(
-                        onClick = { selectedChart = "Category" },
-                        modifier = Modifier
-                            .background(
-                                if (selectedChart == "Category") Color(0xFFBDBDBD) else Color.Transparent,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .padding(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.List, // Ikon untuk "Sales by Category"
-                            contentDescription = "Sales by Category",
-                            tint = if (selectedChart == "Category") Color.Black else Color.Gray
-                        )
-                    }
+                            Spacer(modifier = Modifier.width(6.dp))
+                            IconButton(
+                                onClick = { selectedChart = "Category" },
+                                modifier = Modifier
+                                    .background(
+                                        if (selectedChart == "Category") Color(0xFFBDBDBD) else Color.Transparent,
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .padding(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.List,
+                                    contentDescription = "Sales by Category",
+                                    tint = if (selectedChart == "Category") Color.Black else Color.Gray
+                                )
+                            }
 
-                    Spacer(modifier = Modifier.width(6.dp))
-                    IconButton(
-                        onClick = { selectedChart = "Segment" },
-                        modifier = Modifier
-                            .background(
-                                if (selectedChart == "Segment") Color(0xFFBDBDBD) else Color.Transparent,
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .padding(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,   // Ikon untuk "Sales by Segment"
-                            contentDescription = "Sales by Segment",
-                            tint = if (selectedChart == "Segment") Color.Black else Color.Gray
-                        )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            IconButton(
+                                onClick = { selectedChart = "Segment" },
+                                modifier = Modifier
+                                    .background(
+                                        if (selectedChart == "Segment") Color(0xFFBDBDBD) else Color.Transparent,
+                                        shape = RoundedCornerShape(12.dp)
+                                    )
+                                    .padding(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Sales by Segment",
+                                    tint = if (selectedChart == "Segment") Color.Black else Color.Gray
+                                )
+                            }
+                        }
                     }
                 }
-            }
-        }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-        ) {
-            Column (
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Top
-            ){
-                when (selectedChart) {
-                    "Region" -> {
-                        Text(text = "Sales by Region", fontSize = 30.sp, color = BlueJC, fontWeight = FontWeight.Bold, fontFamily = QuickSand)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SalesByRegion(salesDataRegion, totalSales)
-                    }
-                    "Category" -> {
-                        Text(text = "Sales by Category", fontSize = 30.sp, color = BlueJC, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SalesByCategory(salesDataCategory, totalProfit)
-                    }
-                    "Segment" -> {
-                        Text(text = "Sales by Category", fontSize = 30.sp, color = BlueJC, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        SalesBySegment(salesDataSegment, totalQuantity)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Top
+                    ) {
+                        when (selectedChart) {
+                            "Region" -> {
+                                Text(
+                                    text = "Sales by Region",
+                                    fontSize = 30.sp,
+                                    color = BlueJC,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = QuickSand
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                SalesByRegion(salesDataRegion, totalSales)
+                            }
+                            "Category" -> {
+                                Text(
+                                    text = "Sales by Category",
+                                    fontSize = 30.sp,
+                                    color = BlueJC,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                SalesByCategory(salesDataCategory, totalProfit)
+                            }
+                            "Segment" -> {
+                                Text(
+                                    text = "Sales by Segment",
+                                    fontSize = 30.sp,
+                                    color = BlueJC,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                SalesBySegment(salesDataSegment, totalQuantity)
+                            }
+                        }
                     }
                 }
             }
         }
     }
-    HorizontalDivider(thickness = 2.dp, color = Color.Gray)
 }
 
 @Composable
@@ -455,93 +420,124 @@ fun SalesBySegment(salesDataSegment: List<SalesDataSegment>, totalQuantity: Int)
 }
 
 @Composable
-fun SalesBySubCategory(salesDataSubCategory: List<SalesDataSubCategory>){
-    val contextTypeface = LocalContext.current
-    val quickSandTypeface = Typeface.createFromAsset(contextTypeface.assets, "font/quicksand_regular.ttf")
-    Text(text = "Sales By Sub-Category", fontSize = 30.sp, color = BlueJC, fontWeight = FontWeight.Bold, fontFamily = QuickSand)
-    Spacer(modifier = Modifier.height(16.dp))
-    AndroidView(
-        modifier = Modifier.height(500.dp).width(300.dp),
-        factory = { context ->
-            HorizontalBarChart(context).apply {
-                description.isEnabled = false
-                setDrawGridBackground(true)
-                setMaxVisibleValueCount(5)
-                setPinchZoom(false)
-                setDrawBarShadow(false)
-                setFitBars(true)
-                val formatter = DecimalFormat("#,###")
-                xAxis.apply {
-                    position = XAxis.XAxisPosition.BOTTOM
-                    setDrawLabels(true)
-                    setTypeface(quickSandTypeface)
-                }
+fun SalesBySubCategory(salesDataSubCategory: List<SalesDataSubCategory>) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White,
+        ),
 
-                axisLeft.apply {
-                    setTypeface(quickSandTypeface)
-                }
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 8.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            val contextTypeface = LocalContext.current
+            val quickSandTypeface = Typeface.createFromAsset(contextTypeface.assets, "font/quicksand_regular.ttf")
 
-                axisRight.apply {
-                    setTypeface(quickSandTypeface)
-                }
-
-                setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
-                    override fun onValueSelected(e: Entry?, h: Highlight?) {
-                        if (e is BarEntry) {
-                            val salesAmount = e.y.toInt()
-                            val selectedSubCategory = e.data as? String
-                            val formattedSalesAmount = "$" + formatter.format(salesAmount)
-                            if (selectedSubCategory != null) {
-                                val selectedDataSubCategory = salesDataSubCategory.find { it.SubCategory == selectedSubCategory }
-                                if (selectedDataSubCategory != null) {
-                                    Toast.makeText(context, "${selectedSubCategory} Sales: ${formattedSalesAmount}", Toast.LENGTH_SHORT).show()
-                                } else {
-                                    Toast.makeText(context, "Data not found for $selectedSubCategory", Toast.LENGTH_SHORT).show()
-                                }
-                            } else {
-                                Toast.makeText(context, "Invalid SubCategory Data", Toast.LENGTH_SHORT).show()
-                            }
+            Text(
+                text = "Sub-Category Sales",
+                fontSize = 30.sp,
+                color = BlueJC,
+                fontWeight = FontWeight.Bold,
+                fontFamily = QuickSand
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            AndroidView(
+                modifier = Modifier
+                    .height(500.dp)
+                    .width(300.dp),
+                factory = { context ->
+                    HorizontalBarChart(context).apply {
+                        description.isEnabled = false
+                        setDrawGridBackground(true)
+                        setMaxVisibleValueCount(5)
+                        setPinchZoom(false)
+                        setDrawBarShadow(false)
+                        setFitBars(true)
+                        val formatter = DecimalFormat("#,###")
+                        xAxis.apply {
+                            position = XAxis.XAxisPosition.BOTTOM
+                            setDrawLabels(true)
+                            setTypeface(quickSandTypeface)
                         }
+
+                        axisLeft.apply {
+                            setTypeface(quickSandTypeface)
+                        }
+
+                        axisRight.apply {
+                            setTypeface(quickSandTypeface)
+                        }
+
+                        setOnChartValueSelectedListener(object : OnChartValueSelectedListener {
+                            override fun onValueSelected(e: Entry?, h: Highlight?) {
+                                if (e is BarEntry) {
+                                    val salesAmount = e.y.toInt()
+                                    val selectedSubCategory = e.data as? String
+                                    val formattedSalesAmount = "$" + formatter.format(salesAmount)
+                                    if (selectedSubCategory != null) {
+                                        val selectedDataSubCategory = salesDataSubCategory.find { it.SubCategory == selectedSubCategory }
+                                        if (selectedDataSubCategory != null) {
+                                            Toast.makeText(context, "${selectedSubCategory} Sales: ${formattedSalesAmount}", Toast.LENGTH_SHORT).show()
+                                        } else {
+                                            Toast.makeText(context, "Data not found for $selectedSubCategory", Toast.LENGTH_SHORT).show()
+                                        }
+                                    } else {
+                                        Toast.makeText(context, "Invalid SubCategory Data", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+
+                            override fun onNothingSelected() {}
+                        })
+                    }
+                },
+                update = { chart ->
+                    val totalSalesSubCategory = salesDataSubCategory.sumOf { it.Total_Sales.toDouble() }
+                    val entriesSubCategory = salesDataSubCategory.mapIndexed { index, it ->
+                        BarEntry(index.toFloat(), it.Total_Sales.toFloat(), it.SubCategory)
                     }
 
-                    override fun onNothingSelected() {}
-                })
-            }
-        },
-        update = { chart ->
-            val totalSalesSubCategory = salesDataSubCategory.sumOf { it.Total_Sales.toDouble() }
-            val entriesSubCategory = salesDataSubCategory.mapIndexed { index, it ->
-                BarEntry(index.toFloat(), it.Total_Sales.toFloat(), it.SubCategory)
-            }
+                    val dataSet = BarDataSet(entriesSubCategory, "Sales by Sub-Category").apply {
+                        colors = listOf(
+                            android.graphics.Color.parseColor("#E69F00"), // Kuning oranye
+                            android.graphics.Color.parseColor("#56B4E9"), // Biru muda
+                            android.graphics.Color.parseColor("#009E73"), // Hijau teal
+                            android.graphics.Color.parseColor("#F0E442"), // Kuning cerah
+                            android.graphics.Color.parseColor("#0072B2"), // Biru
+                            android.graphics.Color.parseColor("#D55E00"), // Oranye gelap
+                            android.graphics.Color.parseColor("#CC79A7")  // Merah muda
+                        )
+                    }
 
-            val dataSet = BarDataSet(entriesSubCategory, "Sales by Sub-Category").apply {
-                colors = listOf(
-                    android.graphics.Color.parseColor("#E69F00"), // Kuning oranye
-                    android.graphics.Color.parseColor("#56B4E9"), // Biru muda
-                    android.graphics.Color.parseColor("#009E73"), // Hijau teal
-                    android.graphics.Color.parseColor("#F0E442"), // Kuning cerah
-                    android.graphics.Color.parseColor("#0072B2"), // Biru
-                    android.graphics.Color.parseColor("#D55E00"), // Oranye gelap
-                    android.graphics.Color.parseColor("#CC79A7")  // Merah muda
-                )
-            }
+                    val barData = BarData(dataSet).apply {
+                        barWidth = 0.9f
+                    }
 
-            val barData = BarData(dataSet).apply {
-                barWidth = 0.9f
-            }
+                    chart.data = barData
 
-            chart.data = barData
-
-            val labels: ArrayList<String> = ArrayList(salesDataSubCategory.map { it.SubCategory })
-            val xAxis = chart.xAxis
-            xAxis.setLabelCount(labels.size, false)
-            xAxis.valueFormatter = IndexAxisValueFormatter(labels)
-            chart.legend.isEnabled = false
-            chart.axisLeft.isInverted()
-            chart.invalidate()
+                    val labels: ArrayList<String> = ArrayList(salesDataSubCategory.map { it.SubCategory })
+                    val xAxis = chart.xAxis
+                    xAxis.setLabelCount(labels.size, false)
+                    xAxis.valueFormatter = IndexAxisValueFormatter(labels)
+                    chart.legend.isEnabled = false
+                    chart.axisLeft.isInverted()
+                    chart.invalidate()
+                }
+            )
         }
-    )
+    }
 }
+
 
 // Composable untuk Profile
 @Composable
@@ -582,7 +578,7 @@ fun Sales(viewModel: SalesViewModel = viewModel()) {
                     totalProfit,
                     totalQuantity
                 )
-                Spacer(modifier = Modifier.height(32.dp)) // Ruang antara chart
+                Spacer(modifier = Modifier.height(8.dp)) // Ruang antara chart
                 SalesBySubCategory(salesDataBySubCategory)
                 Spacer(modifier = Modifier.height(32.dp))
                 HorizontalDivider(thickness = 2.dp, color = Color.Gray)
@@ -593,8 +589,6 @@ fun Sales(viewModel: SalesViewModel = viewModel()) {
         }
     }
 }
-
-
 
 @Composable
 fun PieChartView(salesDataRegion: List<SalesDataRegion>, salesDataCategory: List<SalesDataCategory>, salesDataSegment: List<SalesDataSegment>, salesDataSubCategory: List<SalesDataSubCategory>) {

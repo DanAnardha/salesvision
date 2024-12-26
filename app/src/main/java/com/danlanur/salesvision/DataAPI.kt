@@ -1,5 +1,7 @@
 package com.danlanur.salesvision
 
+import java.time.LocalDate
+
 data class SalesDataRegion(
     val Region: String,
     val Total_Sales: Float,
@@ -20,4 +22,14 @@ data class SalesDataSegment(
 data class SalesDataSubCategory(
     val SubCategory: String,
     val Total_Sales: Float
+)
+
+data class OrderSalesPerDay(
+    val Order_Date: String,
+    val Total_Sales: Float
+)
+
+data class PredictionResult(
+    val ds: String,
+    val yhat: Float
 )
