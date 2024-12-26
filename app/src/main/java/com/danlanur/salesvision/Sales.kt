@@ -82,7 +82,7 @@ fun ChartWithButtons(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         // Card container for the chart and buttons
@@ -424,7 +424,7 @@ fun SalesBySubCategory(salesDataSubCategory: List<SalesDataSubCategory>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(4.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White,

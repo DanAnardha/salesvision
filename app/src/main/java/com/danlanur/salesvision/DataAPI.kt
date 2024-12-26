@@ -33,3 +33,19 @@ data class PredictionResult(
     val ds: String,
     val yhat: Float
 )
+
+data class OrderDates(
+    val earliest_order: String,
+    val latest_order: String
+)
+
+data class RecomPrediction(
+    val prediction: List<Double>
+)
+
+data class SalesByMonth(
+    val Month: String,
+    val Total_Sales: Float,
+    val Total_Profit: Float,
+    val Total_Quantity: Float
+)

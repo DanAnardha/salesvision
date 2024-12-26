@@ -1,8 +1,8 @@
 package com.danlanur.salesvision
 
-import android.util.Log
-import android.widget.Toast
+import android.view.ViewGroup
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,126 +15,271 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import retrofit2.http.GET
-import com.danlanur.salesvision.ui.theme.BlueJC
-import com.danlanur.salesvision.ui.theme.SalesVisionTheme
-import kotlinx.coroutines.launch
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.github.mikephil.charting.charts.PieChart
-import com.github.mikephil.charting.data.PieData
-import com.github.mikephil.charting.data.PieDataSet
-import com.github.mikephil.charting.data.PieEntry
-import com.github.mikephil.charting.highlight.Highlight
-import com.github.mikephil.charting.listener.OnChartValueSelectedListener
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import java.security.KeyStore.Entry
+import com.danlanur.salesvision.ui.theme.BlueJC
+import com.danlanur.salesvision.ui.theme.QuickSand
+import com.github.mikephil.charting.animation.Easing
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
+import com.github.mikephil.charting.formatter.IndexAxisValueFormatter
+import com.github.mikephil.charting.formatter.ValueFormatter
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 
+@Composable
+fun MainHightlight(salesByMonth: List<SalesByMonth>) {
+    val totalProfit = salesByMonth.sumOf { it.Total_Profit.toInt() }
+    val totalSales = salesByMonth.sumOf { it.Total_Sales.toInt() }
+    val totalQuantity = salesByMonth.sumOf { it.Total_Quantity.toInt() }
 
-class SalesViewModels : ViewModel() {
-    private val _salesDataByRegion = MutableStateFlow<List<SalesDataRegion>>(emptyList())
-    val salesDataByRegion = _salesDataByRegion.asStateFlow()
-    private val _salesDataByCategory = MutableStateFlow<List<SalesDataCategory>>(emptyList())
-    val salesDataByCategory = _salesDataByCategory.asStateFlow()
-    private val _salesDataBySegment = MutableStateFlow<List<SalesDataSegment>>(emptyList())
-    val salesDataBySegment = _salesDataBySegment.asStateFlow()
-    private val _salesDataBySubCategory = MutableStateFlow<List<SalesDataSubCategory>>(emptyList())
-    val salesDataBySubCategory = _salesDataBySubCategory.asStateFlow()
+    val dateFormat = SimpleDateFormat("MMM yyyy", Locale.getDefault()) // Format: "Oct 2024"
 
-    init {
-        loadSalesData()
+    val currencyFormatter = object : ValueFormatter() {
+        override fun getFormattedValue(value: Float): String {
+            val formattedValue = "$%.2f".format(value) // Format value as dollar
+            return formattedValue
+        }
     }
 
-    private fun loadSalesData() {
-        viewModelScope.launch {
-            try {
-                val responseRegion = RetrofitInstance.api.getSalesByRegion()
-                _salesDataByRegion.value = responseRegion
-                Log.d("SalesViewModel", "Sales Data Region: $responseRegion")
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
 
-                val responseCategory = RetrofitInstance.api.getSalesByCategory()
-                _salesDataByCategory.value = responseCategory
-                Log.d("SalesViewModel", "Sales Data by Category: $responseCategory")
-
-                val responseSegment = RetrofitInstance.api.getSalesBySegment()
-                _salesDataBySegment.value = responseSegment
-                Log.d("SalesViewModel", "Sales Data by Segment: $responseSegment")
-
-                val responseSubCategory = RetrofitInstance.api.getSalesBySubCategory()
-                _salesDataBySubCategory.value = responseSubCategory
-                Log.d("SalesViewModel", "Sales Data by Sub-Category: $responseSubCategory")
-
-            } catch (e: Exception) {
-                Log.e("SalesViewModel", "Error loading sales data", e)
+        // SALES
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp, top = 64.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            val entriesSales = salesByMonth.mapIndexed { index, result ->
+                val date =
+                    SimpleDateFormat("yyyy-MM", Locale.getDefault()).parse(result.Month) // Parse "2024-10"
+                val formattedDate = date?.let { dateFormat.format(it) } // Format menjadi "Oct 2024"
+                Entry(index.toFloat(), result.Total_Sales.toFloat())
             }
+            AndroidView(
+                modifier = Modifier.height(150.dp),
+                factory = { context ->
+                    LineChart(context).apply {
+                        val dataSet = LineDataSet(entriesSales, "Predicted Sales").apply {
+                            color = android.graphics.Color.parseColor("#E69F00")
+//                            valueTextColor =
+                                android.graphics.Color.parseColor("#CC79A7") // Set warna text
+                            lineWidth = 2f // Set ketebalan garis
+                            setDrawValues(true)  // Enable drawing values on each point
+//                            valueTextSize = 10f  // Set the size of the value text
+                            setValueTextColor(android.graphics.Color.BLACK) // Jika ingin menampilkan nilai pada titik
+                            mode = LineDataSet.Mode.CUBIC_BEZIER
+//                            valueFormatter = currencyFormatter
+                        }
+
+                        val lineData = LineData(dataSet)
+                        this.data = lineData
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        xAxis.position = XAxis.XAxisPosition.BOTTOM
+//            xAxis.setLabelCount(predictionResults.size, true)
+                        xAxis.setLabelCount(5, true)  // Show 5 labels by default
+                        xAxis.setGranularity(1f)
+                        xAxis.valueFormatter = IndexAxisValueFormatter(
+                            salesByMonth.map {
+                                val date = SimpleDateFormat(
+                                    "yyyy-MM",
+                                    Locale.getDefault()
+                                ).parse(it.Month)
+                                dateFormat.format(date)
+                            }
+                        )
+                        axisLeft.isEnabled = false
+                        axisRight.isEnabled = false
+                        xAxis.isEnabled = false
+                        description.isEnabled = false
+                        legend.isEnabled = false
+                        this.animateY(1000, Easing.EaseInOutQuart)
+                        this.isDragEnabled = true
+                        this.setScaleEnabled(true)
+                        this.setPinchZoom(true)
+                        invalidate() // Memastikan chart di-refresh dengan data terbaru
+                    }
+                }
+            )
+        }
+
+        // SALES
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp, top = 4.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            val entriesProfit = salesByMonth.mapIndexed { index, result ->
+                val date =
+                    SimpleDateFormat("yyyy-MM", Locale.getDefault()).parse(result.Month) // Parse "2024-10"
+                val formattedDate = date?.let { dateFormat.format(it) } // Format menjadi "Oct 2024"
+                Entry(index.toFloat(), result.Total_Profit.toFloat())
+            }
+            AndroidView(
+                modifier = Modifier.height(150.dp),
+                factory = { context ->
+                    LineChart(context).apply {
+                        val dataSet = LineDataSet(entriesProfit, "Predicted Sales").apply {
+                            color = android.graphics.Color.parseColor("#E69F00")
+//                            valueTextColor =
+                            android.graphics.Color.parseColor("#CC79A7") // Set warna text
+                            lineWidth = 2f // Set ketebalan garis
+                            setDrawValues(true)  // Enable drawing values on each point
+//                            valueTextSize = 10f  // Set the size of the value text
+                            setValueTextColor(android.graphics.Color.BLACK) // Jika ingin menampilkan nilai pada titik
+                            mode = LineDataSet.Mode.CUBIC_BEZIER
+//                            valueFormatter = currencyFormatter
+                        }
+
+                        val lineData = LineData(dataSet)
+                        this.data = lineData
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        xAxis.position = XAxis.XAxisPosition.BOTTOM
+//            xAxis.setLabelCount(predictionResults.size, true)
+                        xAxis.setLabelCount(5, true)  // Show 5 labels by default
+                        xAxis.setGranularity(1f)
+                        xAxis.valueFormatter = IndexAxisValueFormatter(
+                            salesByMonth.map {
+                                val date = SimpleDateFormat(
+                                    "yyyy-MM",
+                                    Locale.getDefault()
+                                ).parse(it.Month)
+                                dateFormat.format(date)
+                            }
+                        )
+                        axisLeft.isEnabled = false
+                        axisRight.isEnabled = false
+                        xAxis.isEnabled = false
+                        description.isEnabled = false
+                        legend.isEnabled = false
+                        this.animateY(1000, Easing.EaseInOutQuart)
+                        this.isDragEnabled = true
+                        this.setScaleEnabled(true)
+                        this.setPinchZoom(true)
+                        invalidate() // Memastikan chart di-refresh dengan data terbaru
+                    }
+                }
+            )
+        }
+
+        // SALES
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 16.dp, top = 4.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+        ) {
+            val entriesQuantity = salesByMonth.mapIndexed { index, result ->
+                val date =
+                    SimpleDateFormat("yyyy-MM", Locale.getDefault()).parse(result.Month) // Parse "2024-10"
+                val formattedDate = date?.let { dateFormat.format(it) } // Format menjadi "Oct 2024"
+                Entry(index.toFloat(), result.Total_Quantity.toFloat())
+            }
+            AndroidView(
+                modifier = Modifier.height(150.dp),
+                factory = { context ->
+                    LineChart(context).apply {
+                        val dataSet = LineDataSet(entriesQuantity, "Predicted Sales").apply {
+                            color = android.graphics.Color.parseColor("#E69F00")
+//                            valueTextColor =
+                            android.graphics.Color.parseColor("#CC79A7") // Set warna text
+                            lineWidth = 2f // Set ketebalan garis
+                            setDrawValues(true)  // Enable drawing values on each point
+//                            valueTextSize = 10f  // Set the size of the value text
+                            setValueTextColor(android.graphics.Color.BLACK) // Jika ingin menampilkan nilai pada titik
+                            mode = LineDataSet.Mode.CUBIC_BEZIER
+//                            valueFormatter = currencyFormatter
+                        }
+
+                        val lineData = LineData(dataSet)
+                        this.data = lineData
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                        xAxis.position = XAxis.XAxisPosition.BOTTOM
+//            xAxis.setLabelCount(predictionResults.size, true)
+                        xAxis.setLabelCount(5, true)  // Show 5 labels by default
+                        xAxis.setGranularity(1f)
+                        xAxis.valueFormatter = IndexAxisValueFormatter(
+                            salesByMonth.map {
+                                val date = SimpleDateFormat(
+                                    "yyyy-MM",
+                                    Locale.getDefault()
+                                ).parse(it.Month)
+                                dateFormat.format(date)
+                            }
+                        )
+                        axisLeft.isEnabled = false
+                        axisRight.isEnabled = false
+                        xAxis.isEnabled = false
+                        description.isEnabled = false
+                        legend.isEnabled = false
+                        this.animateY(1000, Easing.EaseInOutQuart)
+                        this.isDragEnabled = true
+                        this.setScaleEnabled(true)
+                        this.setPinchZoom(true)
+                        invalidate() // Memastikan chart di-refresh dengan data terbaru
+                    }
+                }
+            )
         }
     }
 }
 
 @Composable
 fun Dashboard(viewModel: SalesViewModel = viewModel()) {
-    val salesDataByRegion by viewModel.salesDataByRegion.collectAsState()
-
-    Box(modifier = Modifier
-        .fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp)
-                .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Spacer(modifier = Modifier.height(70.dp))
-//            ChartWithButtons(salesDataByRegion, 4000.toFloat())
-
-            Spacer(modifier = Modifier.height(32.dp)) // Ruang antara chart
-
-//            Text(text = "Sales by Category", fontSize = 30.sp, color = Color.Blue)
-//            Spacer(modifier = Modifier.height(16.dp))
-//            PieChartView(salesDataByCategory)
+    val isLoading by viewModel.isLoading.collectAsState()
+    if (isLoading) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
+    } else {
+        val salesByMonth by viewModel.salesByMonth.collectAsState()
+        MainHightlight(salesByMonth)
     }
 }

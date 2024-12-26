@@ -68,19 +68,17 @@ def predict_recom():
     freight_price = request.args.get('freight_price', type=float)
     comp_1 = request.args.get('comp_1', type=float)
     product_score = request.args.get('product_score', type=float)
-    comp_price_diff = request.args.get('comp_price_diff', type=float)
 
-    if None in [qty, unit_price, freight_price, comp_1, product_score, comp_price_diff]:
+    if None in [qty, unit_price, freight_price, comp_1, product_score]:
         return jsonify({'error': 'Missing required parameters'}), 400
     input_data = pd.DataFrame([{
         'qty': qty,
         'unit_price': unit_price,
         'freight_price': freight_price,
         'comp_1': comp_1,
-        'product_score': product_score,
-        'comp_price_diff': comp_price_diff
+        'product_score': product_score
     }])
-    required_columns = ['qty', 'unit_price', 'freight_price', 'comp_1', 'product_score', 'comp_price_diff']
+    required_columns = ['qty', 'unit_price', 'freight_price', 'comp_1', 'product_score']
     prediction = recom_model.predict(input_data[required_columns])
     return jsonify({'prediction': prediction.tolist()})
 
@@ -100,6 +98,30 @@ def get_order_sales():
         cursor.execute(query)
         order_sales = cursor.fetchall()
         return jsonify(order_sales)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/sales_by_month', methods=['GET'])
+def get_sales_by_month():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT 
+                DATE_FORMAT(Order_Date, '%Y-%m') AS Month,
+                SUM(Sales) AS Total_Sales,
+                SUM(Profit) AS Total_Profit,
+                SUM(Quantity) AS Total_Quantity
+            FROM orders
+            GROUP BY Month
+            ORDER BY Month ASC
+        """)
+        sales_by_month = cursor.fetchall()
+        return jsonify(sales_by_month)
     except mysql.connector.Error as err:
         return jsonify({'error': str(err)}), 500
     finally:
@@ -182,6 +204,17 @@ def get_sales_by_subcategory():
         if connection.is_connected():
             cursor.close()
             connection.close()
+
+@app.route('/api/get_order_dates', methods=['GET'])
+def get_order_dates():
+    connection = mysql.connector.connect(**db_config)
+    cursor = connection.cursor(dictionary=True)
+    query = "SELECT MIN(Order_Date) AS earliest_order, MAX(Order_Date) AS latest_order FROM orders"
+    cursor.execute(query)
+    order_dates = cursor.fetchall()
+    cursor.close()
+    connection.close()
+    return jsonify(order_dates)
 
 if __name__ == '__main__':
     app.run(debug=True)

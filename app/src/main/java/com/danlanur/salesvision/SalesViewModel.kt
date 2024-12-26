@@ -28,11 +28,26 @@ interface ApiService {
     @GET("api/order_sales")
     suspend fun getOrderSalesPerDay(): List<OrderSalesPerDay>
 
+    @GET("api/get_order_dates")
+    suspend fun getOrderDates(): List<OrderDates>
+
+    @GET("/api/sales_by_month")
+    suspend fun getMonthlySalesData(): List<SalesByMonth>
+
     @GET("predict_forecast")
     suspend fun predictSales(
         @Query("start_date") startDate: String,
         @Query("end_date") endDate: String
     ): Response<List<PredictionResult>>
+
+    @GET("predict_recom")
+    suspend fun predictRecom(
+        @Query("qty") qty: Float,
+        @Query("unit_price") unitPrice: Float,
+        @Query("freight_price") freightPrice: Float,
+        @Query("comp_1") comp1: Float,
+        @Query("product_score") productScore: Float,
+    ): Response<RecomPrediction>
 }
 
 object RetrofitInstance {
@@ -58,6 +73,10 @@ class SalesViewModel : ViewModel() {
     val salesDataBySubCategory = _salesDataBySubCategory.asStateFlow()
     private val _orderSalesDay = MutableStateFlow<List<OrderSalesPerDay>>(emptyList())
     val orderSalesPerDay = _orderSalesDay.asStateFlow()
+    private val _salesByMonth = MutableStateFlow<List<SalesByMonth>>(emptyList())
+    val salesByMonth = _salesByMonth.asStateFlow()
+    private val _orderDates = MutableStateFlow<List<OrderDates>>(emptyList())
+    val orderDates = _orderDates.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
@@ -85,9 +104,17 @@ class SalesViewModel : ViewModel() {
                 _salesDataBySubCategory.value = responseSubCategory
                 Log.d("SalesViewModel", "Sales Data by Sub-Category: $responseSubCategory")
 
+                val responseSalesByMonth = RetrofitInstance.api.getMonthlySalesData()
+                _salesByMonth.value = responseSalesByMonth
+                Log.d("SalesViewModel", "Monthly Sales Data: $responseSalesByMonth")
+
                 val responseSalesPerDay = RetrofitInstance.api.getOrderSalesPerDay()
                 _orderSalesDay.value = responseSalesPerDay
-                Log.d("SalesViewModel", "Sales Data by Sub-Category: $responseSubCategory")
+                Log.d("SalesViewModel", "Sales Data: $responseSubCategory")
+
+                val responseOrderDates = RetrofitInstance.api.getOrderDates()
+                _orderDates.value = responseOrderDates
+                Log.d("SalesViewModel", "Dates: $responseOrderDates")
             } catch (e: Exception) {
                 Log.e("SalesViewModel", "Error loading sales data", e)
             } finally {
