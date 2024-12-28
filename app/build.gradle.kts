@@ -77,5 +77,8 @@ dependencies {
     implementation("com.maxkeppeler.sheets-compose-dialogs:core:1.0.2")
     implementation("com.maxkeppeler.sheets-compose-dialogs:calendar:1.0.2")
 
-    implementation ("com.github.wasabeef:blurry:3.0.0")
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.24.13-rc")
+    implementation("com.github.wasabeef:blurry:3.0.0")
+    implementation("io.github.sunny-chung:composable-table:1.2.0")
+    implementation("com.github.Breens-Mbaka:BeeTablesCompose:1.2.0")
 }

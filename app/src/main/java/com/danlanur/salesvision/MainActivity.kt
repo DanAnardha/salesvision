@@ -1,11 +1,15 @@
 package com.danlanur.salesvision
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -50,8 +54,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -81,30 +88,40 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.danlanur.salesvision.ui.theme.BlueJC
 import com.danlanur.salesvision.ui.theme.SalesVisionTheme
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3Api::class)
+    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SalesVisionTheme {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
 //                        .paint(
 //                            painterResource(id = R.drawable.jclogin),
 //                            contentScale = ContentScale.FillBounds
 //                        )
-                ) {
-                    val navController = rememberNavController()
-                    NavGraph(navController)
-                    // NavDrawer()
-                }
+                    ) {
+                        val navController = rememberNavController()
+                        NavGraph(navController)
+                        // NavDrawer()
+                    }
+
             }
         }
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -132,6 +149,22 @@ fun MainScreen(navController: NavHostController) {
                         )
                 }
                 Spacer(modifier = Modifier.height(10.dp))
+                val backPressedOnce = remember { mutableStateOf(false) }
+
+                BackHandler {
+                    if (backPressedOnce.value) {
+                        (context as Activity).finish() // Menutup aplikasi
+                    } else {
+                        backPressedOnce.value = true
+                        Toast.makeText(context, "Press back again to exit", Toast.LENGTH_SHORT).show()
+
+                        CoroutineScope(Dispatchers.Main).launch {
+                            delay(2000) // 2 detik untuk memberi waktu
+                            backPressedOnce.value = false
+                        }
+                    }
+                }
+
                 NavigationDrawerItem(label = { Text(text = "Dashboard", color = BlueJC)},
                     selected = false,
                     icon = { Icon(imageVector = Icons.Default.Home, contentDescription = "dashboard", tint = BlueJC)},
@@ -143,7 +176,7 @@ fun MainScreen(navController: NavHostController) {
                             popUpTo(0)
                         }
                     })
-                NavigationDrawerItem(label = { Text(text = "Sales", color = BlueJC)},
+                NavigationDrawerItem(label = { Text(text = "Manager & Customer", color = BlueJC)},
                     selected = false,
                     icon = { Icon(imageVector = Icons.Default.Person, contentDescription = "dashboard", tint = BlueJC)},
                     onClick = {
@@ -151,10 +184,10 @@ fun MainScreen(navController: NavHostController) {
                             drawerState.close()
                         }
                         navigationController.navigate(Screens.Sales.screen){
-                            popUpTo(0)
+                            popUpTo(Screens.Sales.screen) { inclusive = true }
                         }
                     })
-                NavigationDrawerItem(label = { Text(text = "Recommendation", color = BlueJC)},
+                NavigationDrawerItem(label = { Text(text = "Utilities", color = BlueJC)},
                     selected = false,
                     icon = { Icon(imageVector = Icons.Default.Settings, contentDescription = "dashboard", tint = BlueJC)},
                     onClick = {
@@ -162,7 +195,7 @@ fun MainScreen(navController: NavHostController) {
                             drawerState.close()
                         }
                         navigationController.navigate(Screens.Settings.screen){
-                            popUpTo(0)
+                            popUpTo(Screens.Settings.screen) { inclusive = true }
                         }
                     })
                 NavigationDrawerItem(label = { Text(text = "Logout", color = BlueJC)},
@@ -204,7 +237,7 @@ fun MainScreen(navController: NavHostController) {
             }
         ) {
             NavHost(navController = navigationController,
-                startDestination = Screens.Sales.screen){
+                startDestination = Screens.Dashboard.screen){
                 composable(Screens.Dashboard.screen) { Dashboard()}
                 composable(Screens.Sales.screen) { Sales() }
                 composable(Screens.Settings.screen) { Recommendation() }
@@ -295,6 +328,7 @@ private fun authenticate(username: String, password: String): Boolean {
     return username == validUsername && password == validPassword
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun NavGraph(navController: NavHostController) {
     NavHost(navController = navController, startDestination = "main") {

@@ -82,6 +82,54 @@ def predict_recom():
     prediction = recom_model.predict(input_data[required_columns])
     return jsonify({'prediction': prediction.tolist()})
 
+@app.route('/api/sales_by_state', methods=['GET'])
+def get_order_sales_by_state():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        query = """
+        SELECT 
+            StateProvince,
+            SUM(Sales) AS Total_Sales,
+            SUM(Profit) AS Total_Profit,
+            SUM(Quantity) AS Total_Quantity
+        FROM orders
+        GROUP BY StateProvince
+        ORDER BY StateProvince ASC
+        """
+        cursor.execute(query)
+        order_sales_by_state = cursor.fetchall()
+        return jsonify(order_sales_by_state)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/order_by_shipmode', methods=['GET'])
+def get_orders_by_ship_mode():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        query = """
+        SELECT 
+            Ship_Mode,
+            COUNT(Order_ID) AS Total_Order
+        FROM orders
+        GROUP BY Ship_Mode
+        ORDER BY Ship_Mode ASC
+        """
+        cursor.execute(query)
+        orders_by_ship_mode = cursor.fetchall()
+        return jsonify(orders_by_ship_mode)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
 @app.route('/api/order_sales', methods=['GET'])
 def get_order_sales():
     try:
@@ -105,6 +153,95 @@ def get_order_sales():
             cursor.close()
             connection.close()
 
+@app.route('/api/profit_by_category_per_month', methods=['GET'])
+def get_profit_by_category_per_month():
+    try:
+        start_date = request.args.get('start_date', '2021-01-01')
+        end_date = request.args.get('end_date', '2030-12-31')
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+
+        query = """
+        SELECT 
+            DATE_FORMAT(Order_Date, '%Y-%m') AS Month,
+            Category,
+            SUM(Profit) AS Total_Profit
+        FROM orders
+        WHERE Order_Date BETWEEN %s AND %s
+        GROUP BY Month, Category
+        ORDER BY Month ASC, Category ASC
+        """
+        cursor.execute(query, (start_date, end_date))
+        profit_by_category_per_month = cursor.fetchall()
+
+        return jsonify(profit_by_category_per_month)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+
+@app.route('/api/profit_by_region_per_month', methods=['GET'])
+def get_profit_by_region_per_month():
+    try:
+        start_date = request.args.get('start_date', '2021-01-01')
+        end_date = request.args.get('end_date', '2030-12-31')
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+
+        query = """
+        SELECT 
+            DATE_FORMAT(Order_Date, '%Y-%m') AS Month,
+            Region,
+            SUM(Profit) AS Total_Profit
+        FROM orders
+        WHERE Order_Date BETWEEN %s AND %s
+        GROUP BY Month, Region
+        ORDER BY Month ASC, Region ASC
+        """
+        cursor.execute(query, (start_date, end_date))
+        profit_by_region_per_month = cursor.fetchall()
+
+        return jsonify(profit_by_region_per_month)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+
+@app.route('/api/profit_by_segment_per_month', methods=['GET'])
+def get_profit_by_segment_per_month():
+    try:
+        start_date = request.args.get('start_date', '2021-01-01')
+        end_date = request.args.get('end_date', '2030-12-31')
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+
+        query = """
+        SELECT 
+            DATE_FORMAT(Order_Date, '%Y-%m') AS Month,
+            Segment,
+            SUM(Profit) AS Total_Profit
+        FROM orders
+        WHERE Order_Date BETWEEN %s AND %s
+        GROUP BY Month, Segment
+        ORDER BY Month ASC, Segment ASC
+        """
+        cursor.execute(query, (start_date, end_date))
+        profit_by_segment_per_month = cursor.fetchall()
+
+        return jsonify(profit_by_segment_per_month)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
 @app.route('/api/sales_by_month', methods=['GET'])
 def get_sales_by_month():
     try:
@@ -115,7 +252,9 @@ def get_sales_by_month():
                 DATE_FORMAT(Order_Date, '%Y-%m') AS Month,
                 SUM(Sales) AS Total_Sales,
                 SUM(Profit) AS Total_Profit,
-                SUM(Quantity) AS Total_Quantity
+                SUM(Quantity) AS Total_Quantity,
+                COUNT(Order_ID) AS Total_Order,
+                COUNT(DISTINCT Customer_ID) AS Total_Customer
             FROM orders
             GROUP BY Month
             ORDER BY Month ASC

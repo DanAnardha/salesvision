@@ -47,5 +47,37 @@ data class SalesByMonth(
     val Month: String,
     val Total_Sales: Float,
     val Total_Profit: Float,
+    val Total_Quantity: Float,
+    val Total_Order: Int,
+    val Total_Customer: Int
+)
+
+data class SalesByState(
+    val StateProvince: String,
+    val Total_Sales: Float,
+    val Total_Profit: Float,
     val Total_Quantity: Float
+)
+
+data class OrderShipMode(
+    val Ship_Mode: String,
+    val Total_Order: Int
+)
+
+data class ProfitByCategory(
+    val Month: String,
+    val Category: String,
+    val Total_Profit: Float
+)
+
+data class ProfitByRegion(
+    val Month: String,
+    val Region: String,
+    val Total_Profit: Float
+)
+
+data class ProfitBySegment(
+    val Month: String,
+    val Segment: String,
+    val Total_Profit: Float
 )

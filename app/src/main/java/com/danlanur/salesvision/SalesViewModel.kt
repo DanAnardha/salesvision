@@ -3,6 +3,7 @@ package com.danlanur.salesvision
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
@@ -34,6 +35,21 @@ interface ApiService {
     @GET("/api/sales_by_month")
     suspend fun getMonthlySalesData(): List<SalesByMonth>
 
+    @GET("/api/sales_by_state")
+    suspend fun getSalesByState(): List<SalesByState>
+
+    @GET("api/order_by_shipmode")
+    suspend fun getOrderByShipMode(): List<OrderShipMode>
+
+    @GET("api/profit_by_region_per_month")
+    suspend fun getProfitByRegion(): List<ProfitByRegion>
+
+    @GET("api/profit_by_category_per_month")
+    suspend fun getProfitByCategory(): List<ProfitByCategory>
+
+    @GET("api/profit_by_segment_per_month")
+    suspend fun getProfitBySegment(): List<ProfitBySegment>
+
     @GET("predict_forecast")
     suspend fun predictSales(
         @Query("start_date") startDate: String,
@@ -51,7 +67,8 @@ interface ApiService {
 }
 
 object RetrofitInstance {
-    private const val BASE_URL = "https://451f-103-178-12-228.ngrok-free.app/"
+    private const val BASE_URL = "https://3cf9-103-178-12-228.ngrok-free.app/"
+
     //    private const val BASE_URL = "https://10.0.2.2:5000/"
     val api: ApiService by lazy {
         Retrofit.Builder()
@@ -77,9 +94,20 @@ class SalesViewModel : ViewModel() {
     val salesByMonth = _salesByMonth.asStateFlow()
     private val _orderDates = MutableStateFlow<List<OrderDates>>(emptyList())
     val orderDates = _orderDates.asStateFlow()
+    private val _salesByState = MutableStateFlow<List<SalesByState>>(emptyList())
+    val salesByState = _salesByState.asStateFlow()
+    private val _orderByShipMode = MutableStateFlow<List<OrderShipMode>>(emptyList())
+    val orderByShipMode = _orderByShipMode.asStateFlow()
+    private val _profitByCategory = MutableStateFlow<List<ProfitByCategory>>(emptyList())
+    val profitByCategory = _profitByCategory.asStateFlow()
+    private val _profitByRegion = MutableStateFlow<List<ProfitByRegion>>(emptyList())
+    val profitByRegion = _profitByRegion.asStateFlow()
+    private val _profitBySegment = MutableStateFlow<List<ProfitBySegment>>(emptyList())
+    val profitBySegment = _profitBySegment.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
+
     init {
         loadSalesData()
     }
@@ -115,11 +143,38 @@ class SalesViewModel : ViewModel() {
                 val responseOrderDates = RetrofitInstance.api.getOrderDates()
                 _orderDates.value = responseOrderDates
                 Log.d("SalesViewModel", "Dates: $responseOrderDates")
+
+                val responseSalesState = RetrofitInstance.api.getSalesByState()
+                _salesByState.value = responseSalesState
+                Log.d("SalesViewModel", "States: $responseSalesState")
+
+                val responseShipMode = RetrofitInstance.api.getOrderByShipMode()
+                _orderByShipMode.value = responseShipMode
+                Log.d("SalesViewModel", "Ship Mode: $responseShipMode")
+
+                val responseProfitRegion = RetrofitInstance.api.getProfitByRegion()
+                _profitByRegion.value = responseProfitRegion
+
+                val responseProfitCategory = RetrofitInstance.api.getProfitByCategory()
+                _profitByCategory.value = responseProfitCategory
+                Log.d("SalesViewModel", "Category Profit: $responseProfitCategory")
+
+                val responseProfitSegment = RetrofitInstance.api.getProfitBySegment()
+                _profitBySegment.value = responseProfitSegment
+
             } catch (e: Exception) {
                 Log.e("SalesViewModel", "Error loading sales data", e)
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+    fun refreshData() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            delay(2000)
+            loadSalesData()
+            _isLoading.value = false
         }
     }
 }
