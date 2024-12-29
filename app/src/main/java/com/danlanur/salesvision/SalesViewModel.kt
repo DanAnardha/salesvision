@@ -50,6 +50,12 @@ interface ApiService {
     @GET("api/profit_by_segment_per_month")
     suspend fun getProfitBySegment(): List<ProfitBySegment>
 
+    @GET("api/profit_by_manager")
+    suspend fun getProfitByManager(): List<ProfitByManager>
+
+    @GET("api/profit_by_manager_year")
+    suspend fun getProfitByManagerYear(): List<ProfitByManagerYear>
+
     @GET("predict_forecast")
     suspend fun predictSales(
         @Query("start_date") startDate: String,
@@ -67,9 +73,9 @@ interface ApiService {
 }
 
 object RetrofitInstance {
-    private const val BASE_URL = "https://3cf9-103-178-12-228.ngrok-free.app/"
+//    private const val BASE_URL = "https://b6d4-103-178-12-228.ngrok-free.app/"
 
-    //    private const val BASE_URL = "https://10.0.2.2:5000/"
+        private const val BASE_URL = "http://10.0.2.2:5000/"
     val api: ApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
@@ -104,6 +110,10 @@ class SalesViewModel : ViewModel() {
     val profitByRegion = _profitByRegion.asStateFlow()
     private val _profitBySegment = MutableStateFlow<List<ProfitBySegment>>(emptyList())
     val profitBySegment = _profitBySegment.asStateFlow()
+    private val _profitByManager = MutableStateFlow<List<ProfitByManager>>(emptyList())
+    val profitByManager = _profitByManager.asStateFlow()
+    private val _profitByManagerYear = MutableStateFlow<List<ProfitByManagerYear>>(emptyList())
+    val profitByManagerYear = _profitByManagerYear.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
@@ -162,6 +172,12 @@ class SalesViewModel : ViewModel() {
                 val responseProfitSegment = RetrofitInstance.api.getProfitBySegment()
                 _profitBySegment.value = responseProfitSegment
 
+                val responseProfitManager = RetrofitInstance.api.getProfitByManager()
+                _profitByManager.value = responseProfitManager
+                Log.d("SalesViewModel", "Manager: $responseProfitManager")
+
+                val responseProfitManagerYear = RetrofitInstance.api.getProfitByManagerYear()
+                _profitByManagerYear.value = responseProfitManagerYear
             } catch (e: Exception) {
                 Log.e("SalesViewModel", "Error loading sales data", e)
             } finally {

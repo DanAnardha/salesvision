@@ -130,6 +130,61 @@ def get_orders_by_ship_mode():
             cursor.close()
             connection.close()
 
+@app.route('/api/profit_by_manager', methods=['GET'])
+def get_profit_by_manager():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        
+        query = """
+        SELECT 
+            m.Manager_Name,
+            SUM(o.Sales) AS Total_Sales,
+            SUM(o.Profit) AS Total_Profit,
+            COUNT(o.Order_ID) AS Total_Orders
+        FROM orders o
+        JOIN manager m ON o.Region = m.region
+        GROUP BY m.Manager_Name
+        ORDER BY m.Manager_Name ASC
+        """
+        cursor.execute(query)
+        profit_by_manager = cursor.fetchall()
+        return jsonify(profit_by_manager)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/profit_by_manager_year', methods=['GET'])
+def get_profit_by_manager_year():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        query = """
+        SELECT 
+            m.Manager_Name,
+            YEAR(o.Order_Date) AS Year,
+            SUM(o.Sales) AS Total_Sales,
+            SUM(o.Profit) AS Total_Profit,
+            COUNT(o.Order_ID) AS Total_Orders,
+            o.Category
+        FROM orders o
+        JOIN manager m ON o.Region = m.Region
+        GROUP BY m.Manager_Name, YEAR(o.Order_Date), o.Category
+        ORDER BY m.Manager_Name, Year ASC;
+        """
+        cursor.execute(query)
+        profit_by_manager_year = cursor.fetchall()
+        return jsonify(profit_by_manager_year)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
 @app.route('/api/order_sales', methods=['GET'])
 def get_order_sales():
     try:

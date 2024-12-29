@@ -63,6 +63,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -1260,11 +1261,12 @@ fun RegionLineChart(profitByRegion: List<ProfitByRegion>, fromMonth: LocalDate, 
     val months = filteredData.map { YearMonth.parse(it.Month, monthFormatter).atDay(1) }.distinct()
     val categories = filteredData.map { it.Region }.distinct()
 
-    val context = LocalContext.current
     val lineDataSets = categories.map { region ->
         val entries = filteredData
             .filter { it.Region == region }
-            .mapIndexed { index, data -> Entry(index.toFloat(), data.Total_Profit) }
+            .mapIndexed { index, data ->
+                Entry(index.toFloat(), data.Total_Profit)
+            }
 
         LineDataSet(entries, region).apply {
             color = when (region) {
@@ -1298,7 +1300,6 @@ fun RegionLineChart(profitByRegion: List<ProfitByRegion>, fromMonth: LocalDate, 
                         e?.let { entry ->
                             h?.let { highlight ->
                                 val dataSetIndex = highlight.dataSetIndex
-
                                 val category = when (dataSetIndex) {
                                     0 -> "Central"
                                     1 -> "East"
@@ -1307,49 +1308,45 @@ fun RegionLineChart(profitByRegion: List<ProfitByRegion>, fromMonth: LocalDate, 
                                     else -> "Unknown"
                                 }
 
-                                val index = entry.x.toInt()
-                                val selectedData = filteredData.filter { it.Region == category }[index]
+                                val filteredByCategory = filteredData.filter { it.Region == category }
+                                val selectedMonthIndex = months.indexOf(YearMonth.parse(filteredByCategory[entry.x.toInt()].Month, monthFormatter).atDay(1))
 
-                                selectedData?.let { data ->
-                                    val month = data.Month
-                                    val profit = data.Total_Profit
+                                if (selectedMonthIndex >= 0 && selectedMonthIndex < filteredByCategory.size) {
+                                    val selectedData = filteredByCategory[selectedMonthIndex]
+                                    val month = selectedData.Month
+                                    val profit = selectedData.Total_Profit
+
                                     val formatter = DecimalFormat("#,###")
                                     val formattedProfit = "$" + formatter.format(profit)
 
                                     try {
-                                        val originalFormat =
-                                            SimpleDateFormat("yyyy-MM", Locale.getDefault())
-                                        val targetFormat =
-                                            SimpleDateFormat("MMMM yyyy", Locale.getDefault())
-                                        val formattedMonth =
-                                            originalFormat.parse(month)?.let { date ->
-                                                targetFormat.format(date)
-                                            } ?: month
+                                        val originalFormat = SimpleDateFormat("yyyy-MM", Locale.getDefault())
+                                        val targetFormat = SimpleDateFormat("MMMM yyyy", Locale.getDefault())
+                                        val formattedMonth = originalFormat.parse(month)?.let { date -> targetFormat.format(date) } ?: month
 
-                                        Toast.makeText(
-                                            context,
-                                            "$formattedMonth $category Profit: $formattedProfit",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                    } catch (e: DateTimeParseException) {
+                                        Toast.makeText(context, "$formattedMonth $category Profit: $formattedProfit", Toast.LENGTH_SHORT).show()
+                                    } catch (e: Exception) {
                                         e.printStackTrace()
+                                        Toast.makeText(context, "Error formatting date", Toast.LENGTH_SHORT).show()
                                     }
+                                } else {
+                                    Toast.makeText(context, "Data not found for selected point", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         }
                     }
 
-                    override fun onNothingSelected() {
-                        // Tidak ada aksi yang diperlukan ketika tidak ada yang dipilih
-                    }
+                    override fun onNothingSelected() {}
                 })
+
+
             }
         },
         update = { lineChart ->
             lineChart.data = lineData
             lineChart.xAxis.valueFormatter = IndexAxisValueFormatter(months.map { it.format(DateTimeFormatter.ofPattern("yyyy-MM")) })
             lineChart.xAxis.granularity = 1f
-            lineChart.invalidate() // Force re-render the chart
+            lineChart.invalidate()
             lineChart.animateY(1000, Easing.EaseInOutQuart)
         },
         modifier = Modifier
@@ -1971,7 +1968,7 @@ fun ChartWithButtons(
                                     .padding(6.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Place,
+                                    painter = painterResource(R.drawable.baseline_place_24),
                                     contentDescription = "Sales by Region",
                                     tint = if (selectedChart == "Region") Color.Black else Color.Gray
                                 )
@@ -1988,7 +1985,7 @@ fun ChartWithButtons(
                                     .padding(6.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.List,
+                                    painter = painterResource(R.drawable.baseline_category_24),
                                     contentDescription = "Sales by Category",
                                     tint = if (selectedChart == "Category") Color.Black else Color.Gray
                                 )
@@ -2005,7 +2002,7 @@ fun ChartWithButtons(
                                     .padding(6.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Person,
+                                    painter = painterResource(R.drawable.baseline_segment_24),
                                     contentDescription = "Sales by Segment",
                                     tint = if (selectedChart == "Segment") Color.Black else Color.Gray
                                 )
@@ -2203,7 +2200,7 @@ fun LineChartWithButtons(
                                     .padding(6.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Place,
+                                    painter = painterResource(R.drawable.baseline_place_24),
                                     contentDescription = "Profit by Region",
                                     tint = if (selectedChart == "Region") Color.Black else Color.Gray
                                 )
@@ -2220,7 +2217,7 @@ fun LineChartWithButtons(
                                     .padding(6.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.List,
+                                    painter = painterResource(R.drawable.baseline_category_24),
                                     contentDescription = "Profit by Category",
                                     tint = if (selectedChart == "Category") Color.Black else Color.Gray
                                 )
@@ -2237,7 +2234,7 @@ fun LineChartWithButtons(
                                     .padding(6.dp)
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Person,
+                                    painter = painterResource(R.drawable.baseline_segment_24),
                                     contentDescription = "Profit by Segment",
                                     tint = if (selectedChart == "Segment") Color.Black else Color.Gray
                                 )

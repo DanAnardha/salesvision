@@ -73,11 +73,28 @@ data class ProfitByCategory(
 data class ProfitByRegion(
     val Month: String,
     val Region: String,
-    val Total_Profit: Float
+    val Total_Profit: Float,
+    var indexInOriginal: Int = -1
 )
 
 data class ProfitBySegment(
     val Month: String,
     val Segment: String,
     val Total_Profit: Float
+)
+
+data class ProfitByManager(
+    val Manager_Name: String,
+    val Total_Sales: Float,
+    val Total_Profit: Float,
+    val Total_Orders: Int
+)
+
+data class ProfitByManagerYear(
+    val Manager_Name: String,
+    val Total_Sales: Float,
+    val Total_Profit: Float,
+    val Total_Orders: Int,
+    val Year: String,
+    val Category: String
 )
