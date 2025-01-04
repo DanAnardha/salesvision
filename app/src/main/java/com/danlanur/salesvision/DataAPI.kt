@@ -98,3 +98,27 @@ data class ProfitByManagerYear(
     val Year: String,
     val Category: String
 )
+
+data class CustomersByMonth(
+    val Month: String,
+    val Total_Customers: Int
+)
+
+data class TopCustomers(
+    val Last_Order: String,
+    val Name: String,
+    val Rank: Int,
+    val Total_Orders: Int,
+    val Total_Profit: Float,
+    val Total_Sales: Float
+)
+
+data class TotalCustomer(
+    val Total_Customers: Int,
+    val Total_Orders: Int
+)
+
+data class OrderDistribution(
+    val Order_Count: Int,
+    val Unique_Customers: Int
+)

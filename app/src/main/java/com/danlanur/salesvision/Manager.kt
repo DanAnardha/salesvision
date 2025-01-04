@@ -37,6 +37,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -76,6 +77,9 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
+import com.google.accompanist.swiperefresh.SwipeRefresh
+import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import kotlinx.coroutines.delay
 import java.text.DecimalFormat
 
 @Composable
@@ -1167,29 +1171,41 @@ fun Sales(viewModel: SalesViewModel = viewModel()) {
             CircularProgressIndicator()
         }
     } else {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
+        var refreshing by remember { mutableStateOf(false) }
+        LaunchedEffect(refreshing) {
+            if (refreshing) {
+                viewModel.refreshData()
+                delay(2000)
+                refreshing = false
+            }
+        }
+
+        SwipeRefresh(
+            state = rememberSwipeRefreshState(isRefreshing = refreshing),
+            onRefresh = { refreshing = true },
         ) {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(8.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.Top,
-                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(0.dp))
-//            PieChartView(salesDataByRegion, salesDataByCategory, salesDataBySegment, salesDataBySubCategory)
-                PieChartWithButtons(
-                    profitByManager,
-                    profitByManagerYear,
-                    totalSales,
-                    totalProfit,
-                    totalOrders
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                // Menggunakan LineChart di Android untuk menampilkan persentase perubahan
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.Top,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(0.dp))
+                    PieChartWithButtons(
+                        profitByManager,
+                        profitByManagerYear,
+                        totalSales,
+                        totalProfit,
+                        totalOrders
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
             }
         }
     }

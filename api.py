@@ -82,6 +82,111 @@ def predict_recom():
     prediction = recom_model.predict(input_data[required_columns])
     return jsonify({'prediction': prediction.tolist()})
 
+@app.route('/api/order_distribution_per_customer', methods=['GET'])
+def get_order_distribution_per_customer():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        
+        query = """
+        SELECT 
+            Order_Count,
+            COUNT(DISTINCT Customer_ID) AS Unique_Customers
+        FROM (
+            SELECT 
+                Customer_ID,
+                COUNT(Order_ID) AS Order_Count
+            FROM orders
+            GROUP BY Customer_ID
+        ) AS OrderDistribution
+        GROUP BY Order_Count
+        ORDER BY Order_Count ASC
+        """
+        cursor.execute(query)
+        order_distribution = cursor.fetchall()
+        
+        return jsonify(order_distribution)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/total_customer', methods=['GET'])
+def get_total_customer():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        
+        query = """
+        SELECT 
+            COUNT(DISTINCT Customer_ID) AS Total_Customers,
+            COUNT(Order_ID) AS Total_Orders
+        FROM orders
+        """
+        cursor.execute(query)
+        result = cursor.fetchall()
+        
+        return jsonify(result)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/customers_by_month', methods=['GET'])
+def get_customers_by_month():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        query = """
+        SELECT 
+            DATE_FORMAT(Order_Date, '%Y-%m') AS Month, 
+            COUNT(DISTINCT Customer_ID) AS Total_Customers
+        FROM orders
+        GROUP BY Month
+        ORDER BY Month ASC
+        """
+        cursor.execute(query)
+        customers_by_month = cursor.fetchall()
+        return jsonify(customers_by_month)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/top_customers', methods=['GET'])
+def get_top_customers():
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        query = """
+        SELECT 
+            ROW_NUMBER() OVER (ORDER BY SUM(Profit) DESC) AS Rank,
+            Customer_Name AS Name,
+            MAX(Order_Date) AS Last_Order,
+            SUM(Profit) AS Total_Profit,
+            SUM(Sales) AS Total_Sales,
+            COUNT(Order_ID) AS Total_Orders
+        FROM orders
+        GROUP BY Customer_Name
+        ORDER BY Total_Profit DESC
+        LIMIT 20
+        """
+        cursor.execute(query)
+        top_customers = cursor.fetchall()
+        return jsonify(top_customers)
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
 @app.route('/api/sales_by_state', methods=['GET'])
 def get_order_sales_by_state():
     try:

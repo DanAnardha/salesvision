@@ -117,13 +117,12 @@ import java.util.Locale
 
 @SuppressLint("SuspiciousIndentation")
 @Composable
-fun MainHightlight(salesByMonth: List<SalesByMonth>) {
+fun MainHightlight(salesByMonth: List<SalesByMonth>, totalCustomer: List<TotalCustomer> ) {
     val totalProfit = salesByMonth.sumOf { it.Total_Profit.toInt() }
     val totalSales = salesByMonth.sumOf { it.Total_Sales.toInt() }
     val totalQuantity = salesByMonth.sumOf { it.Total_Quantity.toInt() }
     val totalOrder = salesByMonth.sumOf { it.Total_Order.toInt() }
-    val totalCustomer = salesByMonth.sumOf { it.Total_Customer.toInt() }
-
+    val customers = totalCustomer.sumOf { it.Total_Customers.toInt() }
     val dateFormat = SimpleDateFormat("MMM yyyy", Locale.getDefault()) // Format: "Oct 2024"
     Spacer(modifier = Modifier.height(0.dp))
     Column(
@@ -691,9 +690,8 @@ fun MainHightlight(salesByMonth: List<SalesByMonth>) {
                             color = BlueJC
                         )
 
-
                         Text(
-                            text = "${totalCustomer}",
+                            text = "$customers",
                             style = MaterialTheme.typography.titleMedium,
                             color = Color.Black
                         )
@@ -2367,6 +2365,7 @@ fun Dashboard(viewModel: SalesViewModel = viewModel()) {
     val profitByCategory by viewModel.profitByCategory.collectAsState()
     val profitByRegion by viewModel.profitByRegion.collectAsState()
     val profitBySegment by viewModel.profitBySegment.collectAsState()
+    val totalCustomer by viewModel.totalCustomer.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
 
     val totalSales = salesDataByRegion.sumOf { it.Total_Sales.toInt() ?: 0 }
@@ -2410,7 +2409,7 @@ fun Dashboard(viewModel: SalesViewModel = viewModel()) {
                     verticalArrangement = Arrangement.Top,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    MainHightlight(salesByMonth)
+                    MainHightlight(salesByMonth, totalCustomer)
                     ChartWithButtons(
                         salesDataByRegion,
                         salesDataByCategory,

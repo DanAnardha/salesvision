@@ -4,11 +4,11 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -25,8 +25,6 @@ import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.AccountCircle
@@ -35,28 +33,23 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.AccountBox
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.List
-import androidx.compose.material.icons.outlined.Notifications
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
@@ -70,20 +63,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.paint
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -92,16 +80,11 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.ViewCompat.FocusDirection
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph
-import androidx.navigation.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -110,8 +93,8 @@ import androidx.navigation.compose.rememberNavController
 import com.danlanur.salesvision.ui.theme.BlueJC
 import com.danlanur.salesvision.ui.theme.QuickSand
 import com.danlanur.salesvision.ui.theme.SalesVisionTheme
-import com.google.accompanist.swiperefresh.SwipeRefresh
-import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -152,13 +135,20 @@ class MainActivity : ComponentActivity() {
                 selectedIcon = Icons.Filled.List,
                 unselectedIcon = Icons.Outlined.List
             )
+            val topCustomersTab = TabBarItem(
+                title = "TopCustomers",
+                selectedIcon = Icons.Filled.List,
+                unselectedIcon = Icons.Outlined.List
+            )
 
             // creating a list of all the tabs
             val tabBarItems = listOf(dashboardTab, managerTab, customerTab, utilsTab)
             var expanded by remember { mutableStateOf(false) }
-
+            val context = LocalContext.current
             // creating our navController
             val navController = rememberNavController()
+            val isLoginPage = remember { mutableStateOf(false) }
+
             SalesVisionTheme {
                 // A surface container using the 'background' color from the theme
                 Surface(
@@ -198,7 +188,12 @@ class MainActivity : ComponentActivity() {
                                             text = { Text("Logout") },
                                             onClick = {
                                                 expanded = false
-                                                // Handle logout action here
+                                                Toast.makeText(context, "Logout", Toast.LENGTH_SHORT).show()
+                                                navController.navigate("login") {
+                                                    popUpTo("login") {
+                                                        inclusive = true
+                                                    }
+                                                }
                                             }
                                         )
                                     }
@@ -211,32 +206,51 @@ class MainActivity : ComponentActivity() {
                             )
                         },
                         bottomBar = {
-                            TabView(
-                                tabBarItems,
-                                navController,
-                            )
+                            if (!isLoginPage.value) {
+                                TabView(tabBarItems, navController) // Menampilkan navbar jika bukan login
+                            }
                         }
                     ) { innerPadding ->
                         NavHost(
                             navController = navController,
-                            startDestination = customerTab.title,
+                            startDestination = "login",
                             modifier = Modifier
                                 .fillMaxSize()
                                 .padding(innerPadding)
                         ) {
+                            composable("login") {
+                                isLoginPage.value = true
+                                LoginScreen(navController = navController)
+                            }
                             composable(dashboardTab.title) {
+                                isLoginPage.value = false
                                 Dashboard()
                             }
                             composable(managerTab.title) {
+                                isLoginPage.value = false
                                 Sales()
                             }
                             composable(customerTab.title) {
-                                Customer()
+                                isLoginPage.value = false
+                                Customer(navController = navController)
                             }
                             composable(utilsTab.title) {
+                                isLoginPage.value = false
                                 Recommendation()
                             }
+                            composable("customerDetails?topCustomers={topCustomers}") { backStackEntry ->
+                                val topCustomersJson =
+                                    backStackEntry.arguments?.getString("topCustomers")
+                                val topCustomersList = Gson().fromJson<List<TopCustomers>>(
+                                    topCustomersJson,
+                                    object : TypeToken<List<TopCustomers>>() {}.type
+                                )
+                                CustomerDetailScreen(topCustomers = topCustomersList)
+                            }
                         }
+                        // Print current destination to log
+                        val currentRoute = navController.currentDestination?.route
+                        Log.d("CurrentDestination", "Current route: $currentRoute")
                     }
                 }
             }
@@ -247,10 +261,8 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TabView(tabBarItems: List<TabBarItem>, navController: NavController) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
-//    var selectedTabIndex by rememberSaveable {
-//        mutableStateOf(0)
-//    }
-    val selectedTabIndex = tabBarItems.indexOfFirst { it.title == currentBackStackEntry?.destination?.route }
+    val selectedTabIndex =
+        tabBarItems.indexOfFirst { it.title == currentBackStackEntry?.destination?.route }
 
 
     NavigationBar(

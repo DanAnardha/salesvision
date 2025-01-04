@@ -56,6 +56,18 @@ interface ApiService {
     @GET("api/profit_by_manager_year")
     suspend fun getProfitByManagerYear(): List<ProfitByManagerYear>
 
+    @GET("api/customers_by_month")
+    suspend fun getCustomersByMonth(): List<CustomersByMonth>
+
+    @GET("api/top_customers")
+    suspend fun getTopCustomers(): List<TopCustomers>
+
+    @GET("api/total_customer")
+    suspend fun getTotalCustomer(): List<TotalCustomer>
+
+    @GET("api/order_distribution_per_customer")
+    suspend fun getOrderDistribution(): List<OrderDistribution>
+
     @GET("predict_forecast")
     suspend fun predictSales(
         @Query("start_date") startDate: String,
@@ -74,7 +86,6 @@ interface ApiService {
 
 object RetrofitInstance {
 //    private const val BASE_URL = "https://6456-103-178-12-228.ngrok-free.app/"
-
         private const val BASE_URL = "http://10.0.2.2:5000/"
     val api: ApiService by lazy {
         Retrofit.Builder()
@@ -114,6 +125,14 @@ class SalesViewModel : ViewModel() {
     val profitByManager = _profitByManager.asStateFlow()
     private val _profitByManagerYear = MutableStateFlow<List<ProfitByManagerYear>>(emptyList())
     val profitByManagerYear = _profitByManagerYear.asStateFlow()
+    private val _customersByMonth = MutableStateFlow<List<CustomersByMonth>>(emptyList())
+    val customersByMonth = _customersByMonth.asStateFlow()
+    private val _topCustomers = MutableStateFlow<List<TopCustomers>>(emptyList())
+    val topCustomers = _topCustomers.asStateFlow()
+    private val _totalCustomer = MutableStateFlow<List<TotalCustomer>>(emptyList())
+    val totalCustomer = _totalCustomer.asStateFlow()
+    private val _orderDistribution = MutableStateFlow<List<OrderDistribution>>(emptyList())
+    val orderDistribution = _orderDistribution.asStateFlow()
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading = _isLoading.asStateFlow()
@@ -132,52 +151,55 @@ class SalesViewModel : ViewModel() {
 
                 val responseCategory = RetrofitInstance.api.getSalesByCategory()
                 _salesDataByCategory.value = responseCategory
-                Log.d("SalesViewModel", "Sales Data by Category: $responseCategory")
 
                 val responseSegment = RetrofitInstance.api.getSalesBySegment()
                 _salesDataBySegment.value = responseSegment
-                Log.d("SalesViewModel", "Sales Data by Segment: $responseSegment")
 
                 val responseSubCategory = RetrofitInstance.api.getSalesBySubCategory()
                 _salesDataBySubCategory.value = responseSubCategory
-                Log.d("SalesViewModel", "Sales Data by Sub-Category: $responseSubCategory")
 
                 val responseSalesByMonth = RetrofitInstance.api.getMonthlySalesData()
                 _salesByMonth.value = responseSalesByMonth
-                Log.d("SalesViewModel", "Monthly Sales Data: $responseSalesByMonth")
 
                 val responseSalesPerDay = RetrofitInstance.api.getOrderSalesPerDay()
                 _orderSalesDay.value = responseSalesPerDay
-                Log.d("SalesViewModel", "Sales Data: $responseSubCategory")
 
                 val responseOrderDates = RetrofitInstance.api.getOrderDates()
                 _orderDates.value = responseOrderDates
-                Log.d("SalesViewModel", "Dates: $responseOrderDates")
 
                 val responseSalesState = RetrofitInstance.api.getSalesByState()
                 _salesByState.value = responseSalesState
-                Log.d("SalesViewModel", "States: $responseSalesState")
 
                 val responseShipMode = RetrofitInstance.api.getOrderByShipMode()
                 _orderByShipMode.value = responseShipMode
-                Log.d("SalesViewModel", "Ship Mode: $responseShipMode")
 
                 val responseProfitRegion = RetrofitInstance.api.getProfitByRegion()
                 _profitByRegion.value = responseProfitRegion
 
                 val responseProfitCategory = RetrofitInstance.api.getProfitByCategory()
                 _profitByCategory.value = responseProfitCategory
-                Log.d("SalesViewModel", "Category Profit: $responseProfitCategory")
 
                 val responseProfitSegment = RetrofitInstance.api.getProfitBySegment()
                 _profitBySegment.value = responseProfitSegment
 
                 val responseProfitManager = RetrofitInstance.api.getProfitByManager()
                 _profitByManager.value = responseProfitManager
-                Log.d("SalesViewModel", "Manager: $responseProfitManager")
 
                 val responseProfitManagerYear = RetrofitInstance.api.getProfitByManagerYear()
                 _profitByManagerYear.value = responseProfitManagerYear
+
+                val responseCustomersByMonth = RetrofitInstance.api.getCustomersByMonth()
+                _customersByMonth.value = responseCustomersByMonth
+
+                val responseTopCustomers = RetrofitInstance.api.getTopCustomers()
+                _topCustomers.value = responseTopCustomers
+
+                val responseTotalCustomer = RetrofitInstance.api.getTotalCustomer()
+                _totalCustomer.value = responseTotalCustomer
+
+                val responseOrderDistribution = RetrofitInstance.api.getOrderDistribution()
+                _orderDistribution.value = responseOrderDistribution
+
             } catch (e: Exception) {
                 Log.e("SalesViewModel", "Error loading sales data", e)
             } finally {
