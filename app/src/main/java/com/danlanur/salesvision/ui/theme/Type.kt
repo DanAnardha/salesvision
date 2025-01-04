@@ -29,6 +29,11 @@ val Typography = Typography(
         fontWeight = FontWeight.Bold,
     ),
 
+    titleSmall = TextStyle(
+        fontFamily = QuickSand,
+        fontWeight = FontWeight.Bold,
+    ),
+
     labelSmall = TextStyle(
         fontFamily = QuickSand,
         fontWeight = FontWeight.Bold

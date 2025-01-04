@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,27 +20,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.List
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Place
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -62,7 +52,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.danlanur.salesvision.ui.theme.BlueJC
 import com.danlanur.salesvision.ui.theme.QuickSand
@@ -72,7 +61,6 @@ import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.charts.PieChart
 import com.github.mikephil.charting.components.Legend
 import com.github.mikephil.charting.components.XAxis
-import com.github.mikephil.charting.components.YAxis
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
@@ -88,13 +76,7 @@ import com.github.mikephil.charting.highlight.Highlight
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener
-import com.github.mikephil.charting.utils.ColorTemplate
 import java.text.DecimalFormat
-import java.text.SimpleDateFormat
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun SalesByManager(profitByManager: List<ProfitByManager>, totalSales: Int) {
@@ -928,6 +910,17 @@ fun PieChartWithButtons(
                                 Spacer(modifier = Modifier.height(16.dp))
                                 ProfitByManager(profitByManager, totalProfit)
 
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "Profit Performance",
+                                    fontSize = 30.sp,
+                                    color = BlueJC,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = QuickSand
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                ManagerProfitLineChart(profitByManagerYear)
+
                                 Spacer(modifier = Modifier.height(32.dp))
                                 ManagerProfitBarChart(profitByManagerYear)
                             }
@@ -941,6 +934,17 @@ fun PieChartWithButtons(
                                 )
                                 Spacer(modifier = Modifier.height(16.dp))
                                 OrdersByManager(profitByManager, totalOrders)
+
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Text(
+                                    text = "Orders Performance",
+                                    fontSize = 30.sp,
+                                    color = BlueJC,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = QuickSand
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                ManagerOrdersLineChart(profitByManagerYear)
 
                                 Spacer(modifier = Modifier.height(32.dp))
                                 ManagerOrdersBarChart(profitByManagerYear)
@@ -1005,7 +1009,137 @@ fun ManagerSalesLineChart(profitByManagerYear: List<ProfitByManagerYear>) {
             val lineData = LineData(lineDataSets as List<ILineDataSet>?)
 
             lineChart.data = lineData
-            lineChart.xAxis.valueFormatter = IndexAxisValueFormatter(years.map { it.toString() })
+//            lineChart.xAxis.valueFormatter = IndexAxisValueFormatter(years.map { it.toString() })
+            lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
+            lineChart.axisRight.isEnabled = false
+            lineChart.xAxis.granularity = 1f
+            lineChart.description.isEnabled = false
+            lineChart.animateY(1000, Easing.EaseInOutQuart)
+            lineChart.invalidate() // Refresh chart
+        },
+        modifier = Modifier.fillMaxWidth().height(350.dp)
+    )
+
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun ManagerProfitLineChart(profitByManagerYear: List<ProfitByManagerYear>) {
+    AndroidView(
+        factory = { context ->
+            LineChart(context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                axisRight.isEnabled = false
+                description.isEnabled = false
+                legend.isEnabled = true
+                legend.verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
+                legend.horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+                legend.orientation = Legend.LegendOrientation.HORIZONTAL
+                legend.setDrawInside(false)
+                xAxis.position = XAxis.XAxisPosition.BOTTOM
+            }
+        },
+        update = { lineChart ->
+            val managers = profitByManagerYear.map { it.Manager_Name }.distinct()
+            val years = profitByManagerYear.map { it.Year }.distinct().sorted()
+            val lineDataSets = mutableListOf<LineDataSet>()
+
+            managers.forEachIndexed { index, manager ->
+                val managerData = profitByManagerYear.filter { it.Manager_Name == manager }
+                val totalSalesPerYear = years.map { year ->
+                    val totalSalesForYear = managerData
+                        .filter { it.Year == year } // Filter data berdasarkan tahun
+                        .sumOf { it.Total_Profit.toInt() } // Jumlahkan total sales
+                    Entry(year.toFloat(), totalSalesForYear.toFloat())
+                }
+
+                val dataSet = LineDataSet(totalSalesPerYear, manager)
+                dataSet.color = when(index) {
+                    0 -> android.graphics.Color.parseColor("#488f31")
+                    1 -> android.graphics.Color.parseColor("#a8c162")
+                    2 -> android.graphics.Color.parseColor("#f9a160")
+                    3 -> android.graphics.Color.parseColor("#de425b")
+                    else -> android.graphics.Color.parseColor("#000000") // Manager C - Merah
+                }
+                dataSet.valueFormatter = CustomValueFormatter()
+                dataSet.valueTextColor = android.graphics.Color.BLACK
+                dataSet.lineWidth = 2f
+                dataSet.valueTextSize = 10f
+                lineDataSets.add(dataSet)
+            }
+
+            val lineData = LineData(lineDataSets as List<ILineDataSet>?)
+
+            lineChart.data = lineData
+//            lineChart.xAxis.valueFormatter = IndexAxisValueFormatter(years.map { it.toString() })
+            lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
+            lineChart.axisRight.isEnabled = false
+            lineChart.xAxis.granularity = 1f
+            lineChart.description.isEnabled = false
+            lineChart.animateY(1000, Easing.EaseInOutQuart)
+            lineChart.invalidate() // Refresh chart
+        },
+        modifier = Modifier.fillMaxWidth().height(350.dp)
+    )
+
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun ManagerOrdersLineChart(profitByManagerYear: List<ProfitByManagerYear>) {
+    AndroidView(
+        factory = { context ->
+            LineChart(context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+                axisRight.isEnabled = false
+                description.isEnabled = false
+                legend.isEnabled = true
+                legend.verticalAlignment = Legend.LegendVerticalAlignment.BOTTOM
+                legend.horizontalAlignment = Legend.LegendHorizontalAlignment.CENTER
+                legend.orientation = Legend.LegendOrientation.HORIZONTAL
+                legend.setDrawInside(false)
+                xAxis.position = XAxis.XAxisPosition.BOTTOM
+            }
+        },
+        update = { lineChart ->
+            val managers = profitByManagerYear.map { it.Manager_Name }.distinct()
+            val years = profitByManagerYear.map { it.Year }.distinct().sorted()
+            val lineDataSets = mutableListOf<LineDataSet>()
+
+            managers.forEachIndexed { index, manager ->
+                val managerData = profitByManagerYear.filter { it.Manager_Name == manager }
+                val totalSalesPerYear = years.map { year ->
+                    val totalSalesForYear = managerData
+                        .filter { it.Year == year } // Filter data berdasarkan tahun
+                        .sumOf { it.Total_Orders.toInt() } // Jumlahkan total sales
+                    Entry(year.toFloat(), totalSalesForYear.toFloat())
+                }
+
+                val dataSet = LineDataSet(totalSalesPerYear, manager)
+                dataSet.color = when(index) {
+                    0 -> android.graphics.Color.parseColor("#488f31")
+                    1 -> android.graphics.Color.parseColor("#a8c162")
+                    2 -> android.graphics.Color.parseColor("#f9a160")
+                    3 -> android.graphics.Color.parseColor("#de425b")
+                    else -> android.graphics.Color.parseColor("#000000") // Manager C - Merah
+                }
+//                dataSet.valueFormatter = CustomValueFormatter()
+                dataSet.valueTextColor = android.graphics.Color.BLACK
+                dataSet.lineWidth = 2f
+                dataSet.valueTextSize = 10f
+                lineDataSets.add(dataSet)
+            }
+
+            val lineData = LineData(lineDataSets as List<ILineDataSet>?)
+
+            lineChart.data = lineData
+//            lineChart.xAxis.valueFormatter = IndexAxisValueFormatter(years.map { it.toString() })
             lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
             lineChart.axisRight.isEnabled = false
             lineChart.xAxis.granularity = 1f
@@ -1040,12 +1174,12 @@ fun Sales(viewModel: SalesViewModel = viewModel()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(8.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(70.dp))
+                Spacer(modifier = Modifier.height(0.dp))
 //            PieChartView(salesDataByRegion, salesDataByCategory, salesDataBySegment, salesDataBySubCategory)
                 PieChartWithButtons(
                     profitByManager,
@@ -1054,63 +1188,8 @@ fun Sales(viewModel: SalesViewModel = viewModel()) {
                     totalProfit,
                     totalOrders
                 )
-                Spacer(modifier = Modifier.height(8.dp)) // Ruang antara chart
-                ManagerSalesLineChart(profitByManagerYear)
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 // Menggunakan LineChart di Android untuk menampilkan persentase perubahan
-                AndroidView(
-                    factory = { context ->
-                        LineChart(context).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.MATCH_PARENT
-                            )
-                        }
-                    },
-                    update = { lineChart ->
-                        val years = listOf(2020, 2021, 2022, 2023) // Tahun
-                        val categories = listOf("Manager A", "Manager B", "Manager C", "Manager D") // Nama Manajer
-                        val salesData = listOf(
-                            listOf(100f, 130f, 170f, 190f), // 2020 - 2023 untuk Manager A
-                            listOf(110f, 140f, 160f, 180f), // 2020 - 2023 untuk Manager B
-                            listOf(95f, 110f, 125f, 150f),  // 2020 - 2023 untuk Manager C
-                            listOf(105f, 130f, 145f, 160f)  // 2020 - 2023 untuk Manager D
-                        )
-
-                        val lineDataSets = mutableListOf<LineDataSet>()
-
-                        categories.forEachIndexed { index, category ->
-                            val entries = years.mapIndexed { yearIndex, year ->
-                                // Menghitung persentase perubahan dari tahun sebelumnya
-                                val prevSales = if (yearIndex > 0) salesData[index][yearIndex - 1] else salesData[index][yearIndex]
-                                val percentChange = if (prevSales > 0) (salesData[index][yearIndex] - prevSales) / prevSales * 100 else 0f
-                                Entry(yearIndex.toFloat(), percentChange)
-                            }
-
-                            val dataSet = LineDataSet(entries, category)
-                            dataSet.color = when(index) {
-                                0 -> android.graphics.Color.parseColor("#488f31") // Manager A - Hijau
-                                1 -> android.graphics.Color.parseColor("#f9a160") // Manager B - Oranye
-                                2 -> android.graphics.Color.parseColor("#de425b") // Manager C - Merah
-                                else -> android.graphics.Color.parseColor("#1e88e5") // Manager D - Biru
-                            }
-                            dataSet.valueTextColor = android.graphics.Color.BLACK
-                            lineDataSets.add(dataSet)
-                        }
-
-                        val lineData = LineData(lineDataSets as List<ILineDataSet>?)
-
-                        lineChart.data = lineData
-                        lineChart.xAxis.valueFormatter = IndexAxisValueFormatter(years.map { it.toString() })
-                        lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
-                        lineChart.axisRight.isEnabled = false
-                        lineChart.description.isEnabled = false
-                        lineChart.animateY(1000, Easing.EaseInOutQuart)
-                        lineChart.invalidate() // Refresh chart
-                    },
-                    modifier = Modifier.fillMaxWidth().height(350.dp)
-                )
-
             }
         }
     }

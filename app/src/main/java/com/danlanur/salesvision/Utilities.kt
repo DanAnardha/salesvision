@@ -1227,12 +1227,12 @@ fun Recommendation(viewModel: SalesViewModel = viewModel()) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(16.dp)
+                    .padding(8.dp)
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.Top,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Spacer(modifier = Modifier.height(70.dp))
+                Spacer(modifier = Modifier.height(0.dp))
                 RecomAndHistory()
             }
         }

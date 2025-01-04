@@ -73,7 +73,7 @@ interface ApiService {
 }
 
 object RetrofitInstance {
-//    private const val BASE_URL = "https://b6d4-103-178-12-228.ngrok-free.app/"
+//    private const val BASE_URL = "https://6456-103-178-12-228.ngrok-free.app/"
 
         private const val BASE_URL = "http://10.0.2.2:5000/"
     val api: ApiService by lazy {
@@ -122,7 +122,7 @@ class SalesViewModel : ViewModel() {
         loadSalesData()
     }
 
-    private fun loadSalesData() {
+    fun loadSalesData() {
         viewModelScope.launch {
             _isLoading.value = true
             try {

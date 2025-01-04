@@ -59,6 +59,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -124,7 +125,7 @@ fun MainHightlight(salesByMonth: List<SalesByMonth>) {
     val totalCustomer = salesByMonth.sumOf { it.Total_Customer.toInt() }
 
     val dateFormat = SimpleDateFormat("MMM yyyy", Locale.getDefault()) // Format: "Oct 2024"
-    Spacer(modifier = Modifier.height(60.dp))
+    Spacer(modifier = Modifier.height(0.dp))
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -1150,7 +1151,7 @@ fun OrderShipMode(orderShipMode: List<OrderShipMode>) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(4.dp),
+            .padding(4.dp, bottom = 16.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White,
@@ -2372,6 +2373,14 @@ fun Dashboard(viewModel: SalesViewModel = viewModel()) {
     val totalProfit = salesDataByRegion.sumOf { it.Total_Profit.toInt() }
     val totalQuantity = salesDataBySegment.sumOf { it.Total_Quantity.toInt() }
 
+    val isDataLoaded by rememberSaveable { mutableStateOf(false) }
+
+    if (!isDataLoaded) {
+        LaunchedEffect(Unit) {
+            viewModel.loadSalesData()
+        }
+    }
+
     if (isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
@@ -2396,7 +2405,7 @@ fun Dashboard(viewModel: SalesViewModel = viewModel()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp)
+                        .padding(bottom = 0.dp, start = 8.dp, end = 8.dp, top = 2.dp)
                         .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.Top,
                     horizontalAlignment = Alignment.CenterHorizontally
@@ -2418,7 +2427,6 @@ fun Dashboard(viewModel: SalesViewModel = viewModel()) {
                     SalesByStateTable(salesByState)
                     Spacer(modifier = Modifier.height(8.dp))
                     OrderShipMode(orderShipMode)
-                    HorizontalDivider(thickness = 2.dp, color = Color.Gray)
                 }
             }
         }
