@@ -122,3 +122,26 @@ data class OrderDistribution(
     val Order_Count: Int,
     val Unique_Customers: Int
 )
+
+data class LoginRequest(
+    val username: String,
+    val password: String
+)
+
+data class LoginResponse(
+    val status: String,
+    val message: String,
+    val token: String,
+    val user_id: Int
+)
+
+data class RegisterRequest(
+    val username: String,
+    val password: String,
+    val email: String
+)
+
+data class RegisterResponse(
+    val status: String,
+    val message: String
+)

@@ -7,13 +7,22 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import retrofit2.Call
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Query
 
 interface ApiService {
+    @POST("api/register")
+    fun register(@Body request: RegisterRequest): Call<RegisterResponse>
+
+    @POST("api/login")
+    fun login(@Body request: LoginRequest): Call<LoginResponse>
+
     @GET("api/sales_by_region")
     suspend fun getSalesByRegion(): List<SalesDataRegion>
 
@@ -85,8 +94,8 @@ interface ApiService {
 }
 
 object RetrofitInstance {
-//    private const val BASE_URL = "https://6456-103-178-12-228.ngrok-free.app/"
-        private const val BASE_URL = "http://10.0.2.2:5000/"
+    private const val BASE_URL = "https://2495-103-178-12-228.ngrok-free.app/"
+//        private const val BASE_URL = "http://10.0.2.2:5000/"
     val api: ApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)

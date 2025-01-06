@@ -1,6 +1,6 @@
 package com.danlanur.salesvision
 
-import android.content.Context
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material3.Button
@@ -20,7 +21,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
@@ -35,51 +35,48 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.danlanur.salesvision.ui.theme.BlueJC
+import org.json.JSONObject
 import retrofit2.Call
 
-fun saveTokenToPreferences(context: Context, token: String) {
-    val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-    val editor = sharedPreferences.edit()
-    editor.putString("auth_token", token)
-    editor.apply() //
-}
-
-fun clearTokenFromPreferences(context: Context) {
-    val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-    val editor = sharedPreferences.edit()
-    editor.remove("auth_token")
-    editor.apply() // Hapus token
-}
-
-fun isUserLoggedIn(context: Context): Boolean {
-    val sharedPreferences = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
-    val token = sharedPreferences.getString("auth_token", null)
-    return token != null
-}
-
-fun loginUser(context: Context, username: String, password: String, onResult: (Boolean, String) -> Unit) {
+fun registerUser(
+    username: String,
+    password: String,
+    email: String,
+    onResult: (Boolean, String) -> Unit
+) {
     val apiService = RetrofitInstance.api
-    val request = LoginRequest(username, password)
+    val requestBody = JSONObject().apply {
+        put("username", username)
+        put("email", email)
+        put("password", password)
+    }
+    val request = RegisterRequest(username, password, email)
 
-    apiService.login(request).enqueue(object : retrofit2.Callback<LoginResponse> {
-        override fun onResponse(call: Call<LoginResponse>, response: retrofit2.Response<LoginResponse>) {
-            if (response.isSuccessful && response.body()?.status == "success") {
-                val token = response.body()?.token ?: ""
-                val userId = response.body()?.user_id ?: -1
-                // Use the userId and token
-                saveTokenToPreferences(context, token)
-                onResult(true, "Login successful: Token: $token, User ID: $userId")
+    apiService.register(request).enqueue(object : retrofit2.Callback<RegisterResponse> {
+        override fun onResponse(
+            call: Call<RegisterResponse>,
+            response: retrofit2.Response<RegisterResponse>
+        ) {
+            if (response.isSuccessful) {
+                val responseBody = response.body()
+                Log.d("Register", "Response: ${responseBody?.status} - ${responseBody?.message}")
+                if (responseBody?.status == "success") {
+                    onResult(true, "Registration successful")
+                } else {
+                    onResult(false, responseBody?.message ?: "Registration failed")
+                }
             } else {
-                onResult(false, response.body()?.message ?: "Login failed")
+                onResult(false, "Server error: ${response.code()}")
             }
         }
 
-        override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+        override fun onFailure(call: Call<RegisterResponse>, t: Throwable) {
             onResult(false, t.message ?: "Network error")
         }
     })
@@ -87,15 +84,12 @@ fun loginUser(context: Context, username: String, password: String, onResult: (B
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController) {
-    val context = LocalContext.current
-    if (isUserLoggedIn(context)) {
-        navController.navigate("dashboard")
-        return
-    }
-
+fun RegisterScreen(navController: NavController) {
     val username = remember { mutableStateOf("") }
     val password = remember { mutableStateOf("") }
+    val email = remember { mutableStateOf("") }
+    val confirmPassword = remember { mutableStateOf("") }
+    val errorMessage = remember { mutableStateOf("") }
 
     val primaryColor = BlueJC // BlueJC Primary
     val secondaryColor = Color(0xFFBBDEFB) // BlueJC Light
@@ -117,8 +111,8 @@ fun LoginScreen(navController: NavController) {
                 .align(Alignment.Center)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.baseline_login_24), // Replace with your icon
-                contentDescription = "Login Icon",
+                painter = painterResource(id = R.drawable.baseline_app_registration_24), // Replace with your icon
+                contentDescription = "Register Icon",
                 tint = Color.White,
                 modifier = Modifier
                     .size(64.dp)
@@ -127,7 +121,7 @@ fun LoginScreen(navController: NavController) {
             )
 
             Text(
-                text = "Welcome Back!",
+                text = "Create Account",
                 fontSize = 36.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -137,7 +131,7 @@ fun LoginScreen(navController: NavController) {
             )
 
             Text(
-                text = "Please login to continue",
+                text = "Please fill in the details to register",
                 fontSize = 16.sp,
                 color = Color.White.copy(alpha = 0.7f),
                 modifier = Modifier
@@ -164,10 +158,9 @@ fun LoginScreen(navController: NavController) {
                     focusedBorderColor = Color.White,
                     focusedTextColor = Color.White,
                     unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
-                    cursorColor = Color(0xFF64B5F6),
-                    focusedLabelColor = Color(0xFF64B5F6),
+                    cursorColor = Color.White,
+                    focusedLabelColor = Color.White,
                     unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
-                    // trailingIconColor = Color.White // Warna ikon penghapus
                     unfocusedTextColor = Color.White
                 ),
                 modifier = Modifier
@@ -175,6 +168,24 @@ fun LoginScreen(navController: NavController) {
                     .padding(bottom = 16.dp)
             )
 
+            OutlinedTextField(
+                value = email.value,
+                onValueChange = { email.value = it },
+                label = { Text("Email") },
+                keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Email),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = Color.White,
+                    focusedTextColor = Color.White,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
+                    cursorColor = Color.White,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    unfocusedTextColor = Color.White
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            )
 
             OutlinedTextField(
                 value = password.value,
@@ -192,16 +203,65 @@ fun LoginScreen(navController: NavController) {
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp)
+                    .padding(bottom = 16.dp)
             )
 
+            OutlinedTextField(
+                value = confirmPassword.value,
+                onValueChange = { confirmPassword.value = it },
+                label = { Text("Confirm Password") },
+                visualTransformation = PasswordVisualTransformation(),
+                colors = TextFieldDefaults.outlinedTextFieldColors(
+                    focusedBorderColor = Color.White,
+                    focusedTextColor = Color.White,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.5f),
+                    cursorColor = Color.White,
+                    focusedLabelColor = Color.White,
+                    unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+                    unfocusedTextColor = Color.White
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
+            )
+
+            // Error message for invalid inputs
+            if (errorMessage.value.isNotEmpty()) {
+                Text(
+                    text = errorMessage.value,
+                    color = Color.Red,
+                    fontSize = 14.sp,
+                    modifier = Modifier
+                        .padding(bottom = 16.dp)
+                        .align(Alignment.CenterHorizontally)
+                )
+            }
+
+            val context = LocalContext.current
             Button(
                 onClick = {
-                    loginUser(context, username.value, password.value) { success, message ->
-                        if (success) {
-                            navController.navigate("dashboard")
-                        } else {
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    // Validate fields before submitting
+                    if (username.value.isEmpty() || email.value.isEmpty() || password.value.isEmpty() || confirmPassword.value.isEmpty()) {
+                        errorMessage.value = "All fields must be filled out."
+                    } else if (password.value != confirmPassword.value) {
+                        errorMessage.value = "Passwords do not match."
+                    } else {
+                        // Proceed with registration logic
+                        errorMessage.value = ""
+                        registerUser(
+                            username.value,
+                            email.value,
+                            password.value
+                        ) { success, message ->
+                            if (success) {
+                                Log.d("Register", "Navigating to login page after registration success")
+                                navController.navigate("login") {
+                                    popUpTo("register") { inclusive = true }
+                                }
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 },
@@ -216,19 +276,19 @@ fun LoginScreen(navController: NavController) {
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
             ) {
-                Text(text = "Login", fontSize = 18.sp)
+                Text(text = "Register", fontSize = 18.sp)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
             TextButton(
                 onClick = {
-                    navController.navigate("register") // Pindah ke halaman register
+                    navController.navigate("login") // Pindah ke halaman register
                 },
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
             ) {
                 Text(
-                    text = "Don't have an account? Register here",
+                    text = "Have an account? Login here",
                     color = Color.White,
                     fontSize = 14.sp
                 )

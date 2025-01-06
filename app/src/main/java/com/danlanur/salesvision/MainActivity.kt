@@ -171,31 +171,37 @@ class MainActivity : ComponentActivity() {
                                     )
                                 },
                                 actions = {
-                                    // Three dots button (overflow menu)
-                                    IconButton(onClick = { expanded = !expanded }) {
-                                        Icon(
-                                            imageVector = Icons.Filled.MoreVert,
-                                            contentDescription = "More options",
-                                            tint = Color.White
-                                        )
-                                    }
-                                    // Dropdown menu
-                                    DropdownMenu(
-                                        expanded = expanded,
-                                        onDismissRequest = { expanded = false }
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text("Logout") },
-                                            onClick = {
-                                                expanded = false
-                                                Toast.makeText(context, "Logout", Toast.LENGTH_SHORT).show()
-                                                navController.navigate("login") {
-                                                    popUpTo("login") {
-                                                        inclusive = true
+                                    if (!isLoginPage.value) {
+                                        IconButton(onClick = { expanded = !expanded }) {
+                                            Icon(
+                                                imageVector = Icons.Filled.MoreVert,
+                                                contentDescription = "More options",
+                                                tint = Color.White
+                                            )
+                                        }
+                                        // Dropdown menu
+                                        DropdownMenu(
+                                            expanded = expanded,
+                                            onDismissRequest = { expanded = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("Logout") },
+                                                onClick = {
+                                                    clearTokenFromPreferences(context)
+                                                    expanded = false
+                                                    Toast.makeText(
+                                                        context,
+                                                        "Logout",
+                                                        Toast.LENGTH_SHORT
+                                                    ).show()
+                                                    navController.navigate("login") {
+                                                        popUpTo("login") {
+                                                            inclusive = true
+                                                        }
                                                     }
                                                 }
-                                            }
-                                        )
+                                            )
+                                        }
                                     }
                                 },
                                 colors = TopAppBarDefaults.topAppBarColors(
@@ -221,6 +227,10 @@ class MainActivity : ComponentActivity() {
                             composable("login") {
                                 isLoginPage.value = true
                                 LoginScreen(navController = navController)
+                            }
+                            composable("register") {
+                                isLoginPage.value = true
+                                RegisterScreen(navController = navController)
                             }
                             composable(dashboardTab.title) {
                                 isLoginPage.value = false
@@ -274,7 +284,6 @@ fun TabView(tabBarItems: List<TabBarItem>, navController: NavController) {
                 selected = selectedTabIndex == index,
                 onClick = {
                     navController.navigate(tabBarItem.title) {
-                        // Menghapus semua back stack yang tidak perlu, untuk menghindari duplikasi navigasi
                         popUpTo(navController.graph.startDestinationId) { saveState = true }
                         launchSingleTop = true
                         restoreState = true

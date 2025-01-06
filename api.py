@@ -3,6 +3,7 @@ import mysql.connector
 from datetime import datetime, timedelta
 import joblib
 import pandas as pd
+import jwt
 
 app = Flask(__name__)
 
@@ -12,6 +13,119 @@ db_config = {
     'password': '',
     'database': 'superstore'
 }
+
+# @app.route('/api/register', methods=['POST'])
+# def add_user():
+#     data = request.get_json()
+#     if not data or not all(k in data for k in ('username', 'password', 'email')):
+#         return jsonify({'error': 'Missing required fields: username, password, email'}), 400
+#     try:
+#         connection = mysql.connector.connect(**db_config)
+#         cursor = connection.cursor()
+#         from werkzeug.security import generate_password_hash
+#         password_hash = generate_password_hash(data['password'])
+#         query = """
+#         INSERT INTO users (username, password_hash, email)
+#         VALUES (%s, %s, %s)
+#         """
+#         cursor.execute(query, (data['username'], password_hash, data['email']))
+#         connection.commit()
+#         return jsonify({'status': 'success', 'message': 'User added successfully', 'user_id': cursor.lastrowid}), 201
+#     except mysql.connector.Error as err:
+#         return jsonify({'error': str(err)}), 500
+#     finally:
+#         if connection.is_connected():
+#             cursor.close()
+#             connection.close()
+
+@app.route('/api/register', methods=['POST'])
+def add_user():
+    data = request.get_json()
+    if not data or not all(k in data for k in ('username', 'password', 'email')):
+        return jsonify({'error': 'Missing required fields: username, password, email'}), 400
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        query = """
+        INSERT INTO users (username, password, email)
+        VALUES (%s, %s, %s)
+        """
+        cursor.execute(query, (data['username'], data['password'], data['email']))  # Menyimpan password langsung
+        connection.commit()
+        return jsonify({'status': 'success', 'message': 'User added successfully', 'user_id': cursor.lastrowid}), 201
+    except mysql.connector.Error as err:
+        return jsonify({'error': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    if not data or not all(k in data for k in ('username', 'password')):
+        return jsonify({'status': 'error', 'message': 'Missing required fields: username, password'}), 400
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor()
+        query = "SELECT user_id, username, password FROM users WHERE username = %s"
+        cursor.execute(query, (data['username'],))
+        user = cursor.fetchone()
+        if user is None:
+            return jsonify({'status': 'error', 'message': 'Invalid username or password'}), 401
+        if user[2] != data['password']:  # Langsung membandingkan password
+            return jsonify({'status': 'error', 'message': 'Invalid username or password'}), 401
+        return jsonify({
+            'status': 'success',
+            'message': 'Login successful',
+            'user_id': user[0]
+        }), 200
+    except mysql.connector.Error as err:
+        return jsonify({'status': 'error', 'message': str(err)}), 500
+    finally:
+        if connection.is_connected():
+            cursor.close()
+            connection.close()
+
+# @app.route('/api/login', methods=['POST'])
+# def login():
+#     data = request.get_json()
+#     if not data or not all(k in data for k in ('username', 'password')):
+#         return jsonify({'status': 'error', 'message': 'Missing required fields: username, password'}), 400
+#     try:
+#         connection = mysql.connector.connect(**db_config)
+#         cursor = connection.cursor()
+#         query = "SELECT user_id, username, password_hash FROM users WHERE username = %s"
+#         cursor.execute(query, (data['username'],))
+#         user = cursor.fetchone()
+#         if user is None:
+#             return jsonify({'status': 'error', 'message': 'Invalid username or password'}), 401
+#         from werkzeug.security import check_password_hash
+#         if not check_password_hash(user[2], data['password']):
+#             return jsonify({'status': 'error', 'message': 'Invalid username or password'}), 401
+#         token = generate_jwt_token(user[0])
+#         return jsonify({
+#             'status': 'success',
+#             'message': 'Login successful',
+#             'token': token,
+#             'user_id': user[0]
+#         }), 200
+#     except mysql.connector.Error as err:
+#         return jsonify({'status': 'error', 'message': str(err)}), 500
+#     finally:
+#         if connection.is_connected():
+#             cursor.close()
+#             connection.close()
+
+def generate_jwt_token(user_id):
+    """Generate JWT token for the user."""
+    expiration_time = datetime.datetime.utcnow() + datetime.timedelta(hours=1)
+    payload = {
+        'user_id': user_id,
+        'exp': expiration_time
+    }
+    secret_key = 'your_secret_key_here'
+    return jwt.encode(payload, secret_key, algorithm='HS256')
 
 # @app.route('/api/users', methods=['GET'])
 # def get_users():

@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.os.Build
 import android.util.Log
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -53,6 +54,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -461,7 +463,7 @@ fun RecomAndHistory(viewModel: SalesViewModel = viewModel()) {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
+//@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("SimpleDateFormat")
 @Composable
 fun PredictionLineChart(predictionResults: List<PredictionResult>) {
@@ -1215,7 +1217,6 @@ fun RecommendationForm() {
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun Recommendation(viewModel: SalesViewModel = viewModel()) {
     val isLoading by viewModel.isLoading.collectAsState()
@@ -1250,7 +1251,13 @@ fun Recommendation(viewModel: SalesViewModel = viewModel()) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Spacer(modifier = Modifier.height(0.dp))
-                    RecomAndHistory()
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        RecomAndHistory()
+                    } else {
+                        val context = LocalContext.current
+                        Toast.makeText(context, "HP KAMU TIDAK MENDUKUNG!", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
         }
