@@ -250,8 +250,8 @@ fun RegisterScreen(navController: NavController) {
                         errorMessage.value = ""
                         registerUser(
                             username.value,
-                            email.value,
-                            password.value
+                            password.value,
+                            email.value
                         ) { success, message ->
                             if (success) {
                                 Log.d("Register", "Navigating to login page after registration success")
